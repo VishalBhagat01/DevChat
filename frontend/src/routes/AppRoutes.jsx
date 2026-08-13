@@ -1,11 +1,18 @@
 import React from 'react'
-import { Switch, Route } from 'react-router-dom'
+import { Route, Routes, BrowserRouter} from 'react-router-dom'
+import Login from '../screens/Login'
+import Register from '../screens/Register'
+import Home from '../screens/Home'
 
 const AppRoutes = () => {
   return (
-    <Switch>
-      <Route path="/" exact component={App} />
-    </Switch>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
