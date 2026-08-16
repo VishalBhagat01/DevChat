@@ -2,14 +2,18 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import { UserContext } from '../context/user.context'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from '../config/axios'
+import { initializeSocket , recieveMessage , sendMessage } from '../config/socket'
+import userContext from '../context/user.context'
 
 const Project = () => {
 
     const location = useLocation()
+    const socket = initializeSocket()
 
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState([]);
+    const [messages, setMessages] = useState([]);
 
     const [users , setUsers] = useState([])
     const [project, setProject] = useState(location.state.project)
@@ -27,6 +31,15 @@ const Project = () => {
         });
     };
 
+    function send() {
+        sendMessage('project-message', {
+            message,
+            sender: user._id,
+            message: message
+        });
+        setMessage("")
+    }
+
     function addCollaborators() {
         axios.put(`/projects/add-user`, { 
             projectId: location.state.project._id,
@@ -39,6 +52,12 @@ const Project = () => {
     }
 
     useEffect(() => {
+
+        initializeSocket(project._id);
+
+        recieveProjectMessage('project-message', (message) => {
+            setMessages((prevMessages) => [...prevMessages, message]);
+        });
 
         axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
             setProject(res.data.project)
