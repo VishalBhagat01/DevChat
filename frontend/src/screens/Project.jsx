@@ -2,76 +2,187 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import { UserContext } from '../context/user.context'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from '../config/axios'
-import { initializeSocket , recieveMessage , sendMessage } from '../config/socket'
-import userContext from '../context/user.context'
+import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
+// import Markdown from 'markdown-to-jsx'
+// import hljs from 'highlight.js';
+// import { getWebContainer } from '../config/webcontainer'
+
+
+function SyntaxHighlightedCode(props) {
+    const ref = useRef(null)
+
+    React.useEffect(() => {
+        if (ref.current && props.className?.includes('lang-') && window.hljs) {
+            window.hljs.highlightElement(ref.current)
+
+            // hljs won't reprocess the element unless this attribute is removed
+            ref.current.removeAttribute('data-highlighted')
+        }
+    }, [ props.className, props.children ])
+
+    return <code {...props} ref={ref} />
+}
+
 
 const Project = () => {
 
     const location = useLocation()
-    const socket = initializeSocket()
 
-    const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState([]);
-    const [messages, setMessages] = useState([]);
+    const [ isSidePanelOpen, setIsSidePanelOpen ] = useState(false)
+    const [ isModalOpen, setIsModalOpen ] = useState(false)
+    const [ selectedUserId, setSelectedUserId ] = useState(new Set()) // Initialized as Set
+    const [ project, setProject ] = useState(location.state.project)
+    const [ message, setMessage ] = useState('')
+    const { user } = useContext(UserContext)
+    const messageBox = React.createRef()
 
-    const [users , setUsers] = useState([])
-    const [project, setProject] = useState(location.state.project)
+    const [ users, setUsers ] = useState([])
+    const [ messages, setMessages ] = useState([]) // New state variable for messages
+    const [ fileTree, setFileTree ] = useState({})
 
-    
-    const handleUserClick = (userId) => {
-        setSelectedUserId((prev) => {
-            const newSelectedUserId = new Set(prev);
-            if (newSelectedUserId.has(userId)) {
-                newSelectedUserId.delete(userId);
+    const [ currentFile, setCurrentFile ] = useState(null)
+    const [ openFiles, setOpenFiles ] = useState([])
+
+    const [ webContainer, setWebContainer ] = useState(null)
+    const [ iframeUrl, setIframeUrl ] = useState(null)
+
+    const [ runProcess, setRunProcess ] = useState(null)
+
+    const handleUserClick = (id) => {
+        setSelectedUserId(prevSelectedUserId => {
+            const newSelectedUserId = new Set(prevSelectedUserId);
+            if (newSelectedUserId.has(id)) {
+                newSelectedUserId.delete(id);
             } else {
-                newSelectedUserId.add(userId);
+                newSelectedUserId.add(id);
             }
-            return Array.from(newSelectedUserId);
-        });
-    };
 
-    function send() {
-        sendMessage('project-message', {
-            message,
-            sender: user._id,
-            message: message
+            return newSelectedUserId;
         });
-        setMessage("")
+
+
     }
 
+
     function addCollaborators() {
-        axios.put(`/projects/add-user`, { 
+
+        axios.put("/projects/add-user", {
             projectId: location.state.project._id,
             users: Array.from(selectedUserId)
         }).then(res => {
+            console.log(res.data)
             setIsModalOpen(false)
+
         }).catch(err => {
             console.log(err)
-        });
+        })
+
+    }
+
+    const send = () => {
+
+        sendMessage('project-message', {
+            message,
+            sender: user
+        })
+        setMessages(prevMessages => [ ...prevMessages, { sender: user, message } ]) // Update messages state
+        setMessage("")
+
+    }
+
+    function WriteAiMessage(message) {
+
+        const messageObject = JSON.parse(message)
+
+        return (
+            <div
+                className='overflow-auto bg-slate-950 text-white rounded-sm p-2'
+            >
+                <Markdown
+                    children={messageObject.text}
+                    options={{
+                        overrides: {
+                            code: SyntaxHighlightedCode,
+                        },
+                    }}
+                />
+            </div>)
     }
 
     useEffect(() => {
 
-        initializeSocket(project._id);
+        initializeSocket(project._id)
 
-        recieveProjectMessage('project-message', (message) => {
-            setMessages((prevMessages) => [...prevMessages, message]);
-        });
+        if (!webContainer) {
+            getWebContainer().then(container => {
+                setWebContainer(container)
+                console.log("container started")
+            })
+        }
+
+
+        receiveMessage('project-message', data => {
+
+            console.log(data)
+            
+            if (data.sender._id == 'ai') {
+
+
+                const message = JSON.parse(data.message)
+
+                console.log(message)
+
+                webContainer?.mount(message.fileTree)
+
+                if (message.fileTree) {
+                    setFileTree(message.fileTree || {})
+                }
+                setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
+            } else {
+
+
+                setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
+            }
+        })
+
 
         axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
+
+            console.log(res.data.project)
+
             setProject(res.data.project)
-        }).catch(err => {
-            console.log(err)
+            setFileTree(res.data.project.fileTree || {})
         })
 
         axios.get('/users/all').then(res => {
+
             setUsers(res.data.users)
+
+        }).catch(err => {
+
+            console.log(err)
+
+        })
+
+    }, [])
+
+    function saveFileTree(ft) {
+        axios.put('/projects/update-file-tree', {
+            projectId: project._id,
+            fileTree: ft
+        }).then(res => {
+            console.log(res.data)
         }).catch(err => {
             console.log(err)
         })
-        
-    }, []);
+    }
+
+
+    // Removed appendIncomingMessage and appendOutgoingMessage functions
+
+    function scrollToBottom() {
+        messageBox.current.scrollTop = messageBox.current.scrollHeight
+    }
 
     return (
         <main className='h-screen w-screen flex'>
@@ -129,11 +240,7 @@ const Project = () => {
 
 
                             return (
-                                <div 
-                                    key={user._id}
-                                    onClick={() => handleUserClick(user._id)}
-                                    className={`user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center ${selectedUserId.includes(user._id) ? 'bg-slate-400' : ''}`}
-                                >
+                                <div className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
                                     <div className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
                                         <i className="ri-user-fill absolute"></i>
                                     </div>

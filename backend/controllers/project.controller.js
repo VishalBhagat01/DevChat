@@ -1,6 +1,7 @@
 import projectModel from '../models/project.model.js';
 import projectService from '../services/project.service.js';
 import { validationResult } from 'express-validator';
+import userModel from '../models/user.model.js';
 
 export const createProject = async (req, res) => {
 
@@ -59,7 +60,13 @@ export const addUserToProject = async (req, res) => {
 
         const project = await projectModel.findOne({ _id: projectId, users: loggedInUserId._id });
 
-        return res.status(200).json({ message: 'User added to project successfully', project });
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        const updatedProject = await projectService.addUserToProject(userId, projectId);
+
+        return res.status(200).json({ message: 'User added to project successfully', project: updatedProject });
 
 
     } catch (error) {

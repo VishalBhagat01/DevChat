@@ -1,4 +1,5 @@
 import projectModel from '../models/project.model.js';
+import mongoose from 'mongoose';
 
 export const createProject = async (name , userid) => {
 
@@ -42,7 +43,7 @@ export const addUserToProject = async (userId, projectId) => {
         throw new Error('Invalid User ID or Project ID');
     }
 
-    const project = await projectModel.findById({ _id: projectId , users: userId });
+    const project = await projectModel.findOne({ _id: projectId, users: userId });
 
     if(!project){
         throw new Error('Project not found or user already added to the project');
@@ -53,4 +54,14 @@ export const addUserToProject = async (userId, projectId) => {
         { $addToSet: { users: userId } },
         { new: true }
     );
+
+    return updatedProject;
 }
+
+const projectService = {
+    createProject,
+    getAllProjectsByUserId,
+    addUserToProject
+};
+
+export default projectService;

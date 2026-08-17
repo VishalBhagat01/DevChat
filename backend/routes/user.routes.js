@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as userController from '../controllers/user.controller.js';
 import { body } from 'express-validator';
-import * as authMiddleware from '../middleware/auth.middleware.js';
+import { authUser } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -16,10 +16,10 @@ router.post('/login',
     body('password').notEmpty().withMessage('Password is required'),
     userController.loginUserController);
 
-router.get('/profile', authMiddleware.authMiddleware, userController.profileUserController);
+router.get('/profile', authUser, userController.profileUserController);
 
-router.get('/logout', authMiddleware.authMiddleware, userController.logoutUserController);
+router.get('/logout', authUser, userController.logoutUserController);
 
-router.get('/all', authMiddleware.authMiddleware, userController.getAllUsersController);
+router.get('/all', authUser, userController.getAllUsersController);
 
 export default router;
