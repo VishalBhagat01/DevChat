@@ -16,7 +16,9 @@ router.post('/create',
 router.get('/all', authUser, projectController.getAllProjects);
 
 router.put('/add-user', authUser,
-    body('userId').isString().withMessage('User ID must be a string').notEmpty().withMessage('User ID is required'),
+    body('projectId').isString().withMessage('Project ID is required').notEmpty().withMessage('Project ID is required'),
+    body('userId').optional().isString().withMessage('User ID must be a string'),
+    body('users').optional().isArray({ min: 1 }).withMessage('Users must be a non-empty array'),
     projectController.addUserToProject);
 
 

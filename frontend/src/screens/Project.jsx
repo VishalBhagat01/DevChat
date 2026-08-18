@@ -2,18 +2,19 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import { UserContext } from '../context/user.context'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from '../config/axios'
-import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
-// import Markdown from 'markdown-to-jsx'
-// import hljs from 'highlight.js';
-// import { getWebContainer } from '../config/webcontainer'
+import { disconnectSocket, initializeSocket, receiveMessage, sendMessage } from '../config/socket'
+import Markdown from 'markdown-to-jsx'
+import hljs from 'highlight.js'; 
+import 'highlight.js/styles/github-dark.css'
+import { getWebContainer } from '../config/webcontainer'
 
 
 function SyntaxHighlightedCode(props) {
     const ref = useRef(null)
 
     React.useEffect(() => {
-        if (ref.current && props.className?.includes('lang-') && window.hljs) {
-            window.hljs.highlightElement(ref.current)
+        if (ref.current && props.className?.includes('lang-')) {
+            hljs.highlightElement(ref.current)
 
             // hljs won't reprocess the element unless this attribute is removed
             ref.current.removeAttribute('data-highlighted')
@@ -27,14 +28,16 @@ function SyntaxHighlightedCode(props) {
 const Project = () => {
 
     const location = useLocation()
+    const { user } = useContext(UserContext)
+    const navigate = useNavigate()
+    const projectId = location.state?.project?._id
 
     const [ isSidePanelOpen, setIsSidePanelOpen ] = useState(false)
     const [ isModalOpen, setIsModalOpen ] = useState(false)
-    const [ selectedUserId, setSelectedUserId ] = useState(new Set()) // Initialized as Set
-    const [ project, setProject ] = useState(location.state.project)
+    const [ selectedUserId, setSelectedUserId ] = useState(new Set())
+    const [ project, setProject ] = useState(location.state?.project || null)
     const [ message, setMessage ] = useState('')
-    const { user } = useContext(UserContext)
-    const messageBox = React.createRef()
+    const messageBox = useRef(null)
 
     const [ users, setUsers ] = useState([])
     const [ messages, setMessages ] = useState([]) // New state variable for messages
@@ -65,12 +68,14 @@ const Project = () => {
 
 
     function addCollaborators() {
+        if (!projectId) return
 
         axios.put("/projects/add-user", {
-            projectId: location.state.project._id,
+            projectId,
             users: Array.from(selectedUserId)
         }).then(res => {
             console.log(res.data)
+            setProject(res.data.project || project)
             setIsModalOpen(false)
 
         }).catch(err => {
@@ -80,26 +85,34 @@ const Project = () => {
     }
 
     const send = () => {
+        const trimmedMessage = message.trim()
+        if (!trimmedMessage) return
 
         sendMessage('project-message', {
-            message,
+            message: trimmedMessage,
             sender: user
         })
-        setMessages(prevMessages => [ ...prevMessages, { sender: user, message } ]) // Update messages state
+        setMessages(prevMessages => [ ...prevMessages, { sender: user, message: trimmedMessage } ])
         setMessage("")
 
     }
 
     function WriteAiMessage(message) {
 
-        const messageObject = JSON.parse(message)
+        let messageObject
+
+        try {
+            messageObject = typeof message === 'string' ? JSON.parse(message) : message
+        } catch {
+            return <p className='whitespace-pre-wrap text-sm'>{String(message)}</p>
+        }
 
         return (
             <div
-                className='overflow-auto bg-slate-950 text-white rounded-sm p-2'
+                className='overflow-auto rounded-md border border-neutral-700 bg-neutral-950 p-3 text-neutral-100'
             >
                 <Markdown
-                    children={messageObject.text}
+                    children={messageObject?.text || ''}
                     options={{
                         overrides: {
                             code: SyntaxHighlightedCode,
@@ -110,61 +123,66 @@ const Project = () => {
     }
 
     useEffect(() => {
-
-        initializeSocket(project._id)
-
-        if (!webContainer) {
-            getWebContainer().then(container => {
-                setWebContainer(container)
-                console.log("container started")
-            })
+        if (!projectId) {
+            navigate('/')
+            return
         }
 
+        initializeSocket(projectId)
 
-        receiveMessage('project-message', data => {
+        getWebContainer().then(container => {
+            setWebContainer(container)
+            console.log('container started')
+        }).catch(err => console.error(err))
 
+        const cleanupMessageListener = receiveMessage('project-message', data => {
             console.log(data)
-            
-            if (data.sender._id == 'ai') {
 
+            if (data.sender?._id === 'ai') {
+                let aiMessage = null
 
-                const message = JSON.parse(data.message)
-
-                console.log(message)
-
-                webContainer?.mount(message.fileTree)
-
-                if (message.fileTree) {
-                    setFileTree(message.fileTree || {})
+                try {
+                    aiMessage = typeof data.message === 'string' ? JSON.parse(data.message) : data.message
+                } catch {
+                    aiMessage = null
                 }
-                setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
+
+                if (aiMessage?.fileTree) {
+                    setFileTree(aiMessage.fileTree || {})
+                }
+                setMessages(prevMessages => [ ...prevMessages, data ])
             } else {
-
-
-                setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
+                setMessages(prevMessages => [ ...prevMessages, data ])
             }
         })
 
-
-        axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
-
-            console.log(res.data.project)
-
-            setProject(res.data.project)
-            setFileTree(res.data.project.fileTree || {})
+        axios.get(`/projects/get-project/${projectId}`).then(res => {
+            console.log(res.data)
+            setProject(res.data)
+            setFileTree(res.data.fileTree || {})
+        }).catch(err => {
+            console.log(err)
         })
 
         axios.get('/users/all').then(res => {
-
-            setUsers(res.data.users)
-
+            setUsers(res.data.users || [])
         }).catch(err => {
-
             console.log(err)
-
         })
 
-    }, [])
+        return () => {
+            if (cleanupMessageListener) {
+                cleanupMessageListener()
+            }
+            disconnectSocket()
+        }
+    }, [projectId, navigate])
+
+    useEffect(() => {
+        if (messageBox.current) {
+            messageBox.current.scrollTop = messageBox.current.scrollHeight
+        }
+    }, [messages])
 
     function saveFileTree(ft) {
         axios.put('/projects/update-file-tree', {
@@ -178,21 +196,16 @@ const Project = () => {
     }
 
 
-    // Removed appendIncomingMessage and appendOutgoingMessage functions
-
-    function scrollToBottom() {
-        messageBox.current.scrollTop = messageBox.current.scrollHeight
-    }
 
     return (
-        <main className='h-screen w-screen flex'>
-            <section className="left relative flex flex-col h-screen min-w-96 bg-slate-300">
-                <header className='flex justify-between items-center p-2 px-4 w-full bg-slate-100 absolute z-10 top-0'>
-                    <button className='flex gap-2' onClick={() => setIsModalOpen(true)}>
+        <main className='h-screen w-screen overflow-hidden bg-neutral-950 text-neutral-100 lg:flex'>
+            <section className="left relative flex h-[52vh] min-w-0 flex-col border-b border-neutral-800 bg-neutral-900 lg:h-screen lg:w-[26rem] lg:border-b-0 lg:border-r">
+                <header className='absolute top-0 z-10 flex w-full items-center justify-between border-b border-neutral-800 bg-neutral-900/95 p-3 px-4 backdrop-blur'>
+                    <button className='btn btn-secondary flex items-center gap-2 !py-1.5 text-sm' onClick={() => setIsModalOpen(true)}>
                         <i className="ri-add-fill mr-1"></i>
                         <p>Add collaborator</p>
                     </button>
-                    <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-2'>
+                    <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='btn btn-secondary !p-2'>
                         <i className="ri-group-fill"></i>
                     </button>
                 </header>
@@ -200,12 +213,12 @@ const Project = () => {
 
                     <div
                         ref={messageBox}
-                        className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
+                        className="message-box flex max-h-full flex-grow flex-col gap-2 overflow-auto p-3 scrollbar-hide">
                         {messages.map((msg, index) => (
-                            <div key={index} className={`${msg.sender._id === 'ai' ? 'max-w-80' : 'max-w-52'} ${msg.sender._id == user._id.toString() && 'ml-auto'}  message flex flex-col p-2 bg-slate-50 w-fit rounded-md`}>
-                                <small className='opacity-65 text-xs'>{msg.sender.email}</small>
-                                <div className='text-sm'>
-                                    {msg.sender._id === 'ai' ?
+                            <div key={index} className={`${msg.sender?._id === 'ai' ? 'max-w-[30rem]' : 'max-w-80'} ${msg.sender?._id == user?._id?.toString() && 'ml-auto bg-blue-700'} message flex w-fit flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-2.5`}>
+                                <small className='text-xs text-neutral-400'>{msg.sender?.email || 'Unknown'}</small>
+                                <div className='text-sm text-neutral-100'>
+                                    {msg.sender?._id === 'ai' ?
                                         WriteAiMessage(msg.message)
                                         : <p>{msg.message}</p>}
                                 </div>
@@ -217,46 +230,46 @@ const Project = () => {
                         <input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            className='p-2 px-4 border-none outline-none flex-grow' type="text" placeholder='Enter message' />
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    send()
+                                }
+                            }}
+                            className='flex-grow border-t border-neutral-800 bg-neutral-900 p-3 px-4 text-neutral-100 outline-none placeholder:text-neutral-500' type="text" placeholder='Type your message...' />
                         <button
                             onClick={send}
-                            className='px-5 bg-slate-950 text-white'><i className="ri-send-plane-fill"></i></button>
+                            className='btn btn-primary rounded-none border-l border-neutral-800 !px-5'><i className="ri-send-plane-fill"></i></button>
                     </div>
                 </div>
-                <div className={`sidePanel w-full h-full flex flex-col gap-2 bg-slate-50 absolute transition-all ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0`}>
-                    <header className='flex justify-between items-center px-4 p-2 bg-slate-200'>
+                <div className={`sidePanel absolute top-0 flex h-full w-full flex-col gap-2 bg-neutral-900 transition-all ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                    <header className='flex items-center justify-between border-b border-neutral-800 bg-neutral-900 p-3 px-4'>
 
                         <h1
-                            className='font-semibold text-lg'
+                            className='text-lg font-semibold'
                         >Collaborators</h1>
 
-                        <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-2'>
+                        <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='btn btn-secondary !p-2'>
                             <i className="ri-close-fill"></i>
                         </button>
                     </header>
-                    <div className="users flex flex-col gap-2">
+                    <div className="users flex flex-col gap-2 p-2">
 
-                        {project.users && project.users.map(user => {
-
-
-                            return (
-                                <div className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
-                                    <div className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
-                                        <i className="ri-user-fill absolute"></i>
-                                    </div>
-                                    <h1 className='font-semibold text-lg'>{user.email}</h1>
+                        {project?.users?.map((projectUser, index) => (
+                            <div key={projectUser._id || index} className="user flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-neutral-800">
+                                <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white'>
+                                    <i className="ri-user-fill absolute"></i>
                                 </div>
-                            )
-
-
-                        })}
+                                <h1 className='font-semibold text-neutral-100'>{projectUser.email}</h1>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            <section className="right  bg-red-50 flex-grow h-full flex">
+            <section className="right flex h-[48vh] min-h-0 flex-grow bg-neutral-950 lg:h-screen">
 
-                <div className="explorer h-full max-w-64 min-w-52 bg-slate-200">
+                <div className="explorer hidden h-full min-w-52 max-w-64 border-r border-neutral-800 bg-neutral-900 md:block">
                     <div className="file-tree w-full">
                         {
                             Object.keys(fileTree).map((file, index) => (
@@ -266,9 +279,9 @@ const Project = () => {
                                         setCurrentFile(file)
                                         setOpenFiles([ ...new Set([ ...openFiles, file ]) ])
                                     }}
-                                    className="tree-element cursor-pointer p-2 px-4 flex items-center gap-2 bg-slate-300 w-full">
+                                    className="tree-element flex w-full cursor-pointer items-center gap-2 border-b border-neutral-800 bg-neutral-900 p-2 px-4 text-left hover:bg-neutral-800">
                                     <p
-                                        className='font-semibold text-lg'
+                                        className='font-medium text-neutral-200'
                                     >{file}</p>
                                 </button>))
 
@@ -280,17 +293,17 @@ const Project = () => {
 
                 <div className="code-editor flex flex-col flex-grow h-full shrink">
 
-                    <div className="top flex justify-between w-full">
+                    <div className="top flex w-full items-center justify-between border-b border-neutral-800 bg-neutral-900">
 
-                        <div className="files flex">
+                        <div className="files flex overflow-x-auto">
                             {
                                 openFiles.map((file, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setCurrentFile(file)}
-                                        className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
+                                        className={`open-file flex w-fit cursor-pointer items-center gap-2 px-4 py-2 text-sm ${currentFile === file ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`}>
                                         <p
-                                            className='font-semibold text-lg'
+                                            className='font-medium'
                                         >{file}</p>
                                     </button>
                                 ))
@@ -333,7 +346,7 @@ const Project = () => {
                                     })
 
                                 }}
-                                className='p-2 px-4 bg-slate-300 text-white'
+                                className='btn btn-success m-2 text-sm'
                             >
                                 run
                             </button>
@@ -344,7 +357,7 @@ const Project = () => {
                     <div className="bottom flex flex-grow max-w-full shrink overflow-auto">
                         {
                             fileTree[ currentFile ] && (
-                                <div className="code-editor-area h-full overflow-auto flex-grow bg-slate-50">
+                                <div className="code-editor-area h-full flex-grow overflow-auto bg-neutral-950">
                                     <pre
                                         className="hljs h-full">
                                         <code
@@ -380,13 +393,13 @@ const Project = () => {
                 </div>
 
                 {iframeUrl && webContainer &&
-                    (<div className="flex min-w-96 flex-col h-full">
-                        <div className="address-bar">
+                    (<div className="hidden h-full min-w-96 flex-col border-l border-neutral-800 bg-neutral-900 xl:flex">
+                        <div className="address-bar border-b border-neutral-800">
                             <input type="text"
                                 onChange={(e) => setIframeUrl(e.target.value)}
-                                value={iframeUrl} className="w-full p-2 px-4 bg-slate-200" />
+                                value={iframeUrl} className="w-full bg-neutral-900 p-2 px-4 text-neutral-200 outline-none" />
                         </div>
-                        <iframe src={iframeUrl} className="w-full h-full"></iframe>
+                        <iframe src={iframeUrl} className="h-full w-full bg-white"></iframe>
                     </div>)
                 }
 
@@ -394,27 +407,27 @@ const Project = () => {
             </section>
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white p-4 rounded-md w-96 max-w-full relative">
-                        <header className='flex justify-between items-center mb-4'>
+                <div className="fixed inset-0 flex items-center justify-center bg-black/70 p-4">
+                    <div className="relative w-96 max-w-full rounded-lg border border-neutral-700 bg-neutral-900 p-4 text-neutral-100">
+                        <header className='mb-4 flex items-center justify-between'>
                             <h2 className='text-xl font-semibold'>Select User</h2>
-                            <button onClick={() => setIsModalOpen(false)} className='p-2'>
+                            <button onClick={() => setIsModalOpen(false)} className='btn btn-secondary !p-2'>
                                 <i className="ri-close-fill"></i>
                             </button>
                         </header>
-                        <div className="users-list flex flex-col gap-2 mb-16 max-h-96 overflow-auto">
+                        <div className="users-list mb-16 flex max-h-96 flex-col gap-2 overflow-auto">
                             {users.map(user => (
-                                <div key={user.id} className={`user cursor-pointer hover:bg-slate-200 ${Array.from(selectedUserId).indexOf(user._id) != -1 ? 'bg-slate-200' : ""} p-2 flex gap-2 items-center`} onClick={() => handleUserClick(user._id)}>
-                                    <div className='aspect-square relative rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
+                                <div key={user._id} className={`user flex cursor-pointer items-center gap-2 rounded-md p-2 ${selectedUserId.has(user._id) ? 'bg-blue-700/30 border border-blue-700' : 'hover:bg-neutral-800'}`} onClick={() => handleUserClick(user._id)}>
+                                    <div className='relative flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white'>
                                         <i className="ri-user-fill absolute"></i>
                                     </div>
-                                    <h1 className='font-semibold text-lg'>{user.email}</h1>
+                                    <h1 className='font-semibold'>{user.email}</h1>
                                 </div>
                             ))}
                         </div>
                         <button
                             onClick={addCollaborators}
-                            className='absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md'>
+                            className='btn btn-primary absolute bottom-4 left-1/2 -translate-x-1/2 transform'>
                             Add Collaborators
                         </button>
                     </div>

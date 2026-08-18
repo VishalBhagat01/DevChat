@@ -26,7 +26,7 @@ userSchema.methods.isValidPassword = async function(password) {
 }
 
 userSchema.methods.generateJWT = function() {
-    return JWT.sign({ email: this.email }, process.env.JWT_SECRET , { expiresIn: '24h' });
+    return JWT.sign({ id: this._id, email: this.email }, process.env.JWT_SECRET , { expiresIn: '24h' });
 };
 
 const User = mongoose.model("user", userSchema);

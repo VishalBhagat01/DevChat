@@ -33,42 +33,43 @@ const Login = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-            <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-                <h2 className="text-2xl font-bold text-white mb-6">Login</h2>
+        <div className="app-shell flex items-center justify-center p-4">
+            <div className="panel w-full max-w-md p-8 shadow-2xl">
+                <h2 className="mb-1 text-2xl font-bold text-neutral-100">Login</h2>
+                <p className='mb-6 text-sm text-neutral-400'>Sign in to continue to your workspace.</p>
                 <form
                     onSubmit={submitHandler}
                 >
                     <div className="mb-4">
-                        <label className="block text-gray-400 mb-2" htmlFor="email">Email</label>
+                        <label className="mb-2 block text-neutral-300" htmlFor="email">Email</label>
                         <input
 
                             onChange={(e) => setEmail(e.target.value)}
                             type="email"
                             id="email"
-                            className="w-full p-3 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="input-control"
                             placeholder="Enter your email"
                         />
                     </div>
                     <div className="mb-6">
-                        <label className="block text-gray-400 mb-2" htmlFor="password">Password</label>
+                        <label className="mb-2 block text-neutral-300" htmlFor="password">Password</label>
                         <input
                             onChange={(e) => setPassword(e.target.value)}
                             type="password"
                             id="password"
-                            className="w-full p-3 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="input-control"
                             placeholder="Enter your password"
                         />
                     </div>
                     <button
                         type="submit"
-                        className="w-full p-3 rounded bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="btn btn-primary w-full"
                     >
                         Login
                     </button>
                 </form>
-                <p className="text-gray-400 mt-4">
-                    Don't have an account? <Link to="/register" className="text-blue-500 hover:underline">Create one</Link>
+                <p className="mt-4 text-neutral-400">
+                    Don't have an account? <Link to="/register" className="text-blue-400 hover:text-blue-300">Create one</Link>
                 </p>
             </div>
         </div>

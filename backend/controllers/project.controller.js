@@ -50,7 +50,12 @@ export const addUserToProject = async (req, res) => {
     }
 
     try {
-        const { userId, projectId } = req.body;
+        const { userId, users, projectId } = req.body;
+        const targetUserIds = Array.isArray(users) ? users : userId ? [userId] : [];
+
+        if (!projectId || !targetUserIds.length) {
+            return res.status(400).json({ error: 'Project ID and at least one user ID are required' });
+        }
 
         const loggedInUserId = await userModel.findOne({ email: req.user.email }).select('_id');
 
@@ -64,10 +69,9 @@ export const addUserToProject = async (req, res) => {
             return res.status(404).json({ error: 'Project not found' });
         }
 
-        const updatedProject = await projectService.addUserToProject(userId, projectId);
+        const updatedProject = await projectService.addUserToProject(targetUserIds, projectId);
 
         return res.status(200).json({ message: 'User added to project successfully', project: updatedProject });
-
 
     } catch (error) {
         console.error('Error adding user to project:', error);
