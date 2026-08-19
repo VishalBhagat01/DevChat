@@ -1,76 +1,116 @@
-import React, { useState, useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from '../config/axios'
 import { UserContext } from '../context/user.context'
 
 const Login = () => {
-
-
-    const [ email, setEmail ] = useState('')
-    const [ password, setPassword ] = useState('')
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    })
 
     const { setUser } = useContext(UserContext)
-
     const navigate = useNavigate()
 
-    function submitHandler(e) {
+    const handleChange = (event) => {
+        const { name, value } = event.target
 
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const submitHandler = async (e) => {
         e.preventDefault()
 
-        axios.post('/users/login', {
-            email,
-            password
-        }).then((res) => {
-            console.log(res.data)
+        try {
+            const { data } = await axios.post('/users/login', formData)
 
-            localStorage.setItem('token', res.data.token)
-            setUser(res.data.user)
+            console.log(data)
+
+            localStorage.setItem('token', data.token)
+            setUser(data.user)
 
             navigate('/')
-        }).catch((err) => {
-            console.log(err.response.data)
-        })
+        } catch (err) {
+            console.log(err.response?.data)
+        }
     }
 
     return (
-        <div className="app-shell flex items-center justify-center p-4">
-            <div className="panel w-full max-w-md p-8 shadow-2xl">
-                <h2 className="mb-1 text-2xl font-bold text-neutral-100">Login</h2>
-                <p className='mb-6 text-sm text-neutral-400'>Sign in to continue to your workspace.</p>
-                <form
-                    onSubmit={submitHandler}
-                >
-                    <div className="mb-4">
-                        <label className="mb-2 block text-neutral-300" htmlFor="email">Email</label>
-                        <input
+        <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-6">
+            <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl backdrop-blur">
 
-                            onChange={(e) => setEmail(e.target.value)}
-                            type="email"
-                            id="email"
-                            className="input-control"
-                            placeholder="Enter your email"
-                        />
-                    </div>
-                    <div className="mb-6">
-                        <label className="mb-2 block text-neutral-300" htmlFor="password">Password</label>
+                {/* Header */}
+                <div className="mb-8 text-center">
+                    <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+                      Welcome Back
+                    </h1>
+
+                    <p className="mt-3 text-zinc-400">
+                        Sign in to continue to{' '}
+                        <span className="text-white">your workspace</span>.
+                    </p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={submitHandler} className="space-y-5">
+
+                    {/* Email */}
+                    <div>
+                      
+
                         <input
-                            onChange={(e) => setPassword(e.target.value)}
-                            type="password"
-                            id="password"
-                            className="input-control"
-                            placeholder="Enter your password"
+                            name="email"
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="Email"
+                            required
+                            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
                         />
                     </div>
+
+                    {/* Password */}
+                    <div>
+                      
+
+                        <input
+                            name="password"
+                            id="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Password"
+                            required
+                            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+                        />
+                    </div>
+
+                    {/* Login Button */}
                     <button
                         type="submit"
-                        className="btn btn-primary w-full"
+                        className="w-full rounded-xl bg-violet-600 py-3 font-semibold text-white transition-all duration-200 hover:bg-violet-500 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98]"
                     >
                         Login
                     </button>
+
                 </form>
-                <p className="mt-4 text-neutral-400">
-                    Don't have an account? <Link to="/register" className="text-blue-400 hover:text-blue-300">Create one</Link>
+
+                {/* Footer */}
+                <p className="mt-6 text-center text-sm text-zinc-400">
+                    Don't have an account?{" "}
+                    <button
+                        type="button"
+                        onClick={() => navigate("/register")}
+                        className="font-medium text-violet-400 transition hover:text-violet-300"
+                    >
+                        Sign up
+                    </button>
                 </p>
+
             </div>
         </div>
     )
