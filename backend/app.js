@@ -6,12 +6,13 @@ import projectRoutes from './routes/project.routes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import aiRoutes from './routes/ai.routes.js';
+import { corsOptions } from './config/cors.js';
 
 connectDB();
 
 
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -22,7 +23,11 @@ app.use("/projects" , projectRoutes);
 app.use("/ai" , aiRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  res.status(200).json({ status: 'ok', service: 'devchat-api' });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 export default app;

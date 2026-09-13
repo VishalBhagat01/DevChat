@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: devchat-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_AI_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: devchat-redis
+          property: connectionString
+
+  - type: redis
+    name: devchat-redis
+    plan: free
+    maxmemoryPolicy: noeviction

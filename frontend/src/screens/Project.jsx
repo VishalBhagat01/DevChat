@@ -52,6 +52,7 @@ const Project = () => {
     const [messages, setMessages] = useState([])
 
     const [fileTree, setFileTree] = useState({})
+    const [projectCommands, setProjectCommands] = useState({})
 
     const [currentFile, setCurrentFile] = useState(null)
     const [openFiles, setOpenFiles] = useState([])
@@ -60,6 +61,8 @@ const Project = () => {
     const [iframeUrl, setIframeUrl] = useState(null)
 
     const [runProcess, setRunProcess] = useState(null)
+    const [runStatus, setRunStatus] = useState('idle')
+    const [runOutput, setRunOutput] = useState([])
 
 
     /* =========================================================
@@ -261,26 +264,22 @@ const Project = () => {
 
                     if (data.sender?._id === 'ai') {
 
-                        let aiMessage = null
-
                         try {
-
-                            aiMessage =
+                            const aiMessage =
                                 typeof data.message === 'string'
                                     ? JSON.parse(data.message)
                                     : data.message
 
+                            if (aiMessage?.fileTree) {
+                                setFileTree(aiMessage.fileTree)
+                            }
+                            if (aiMessage?.startCommand?.mainItem && Array.isArray(aiMessage.startCommand.commands)) {
+                                setProjectCommands({
+                                    startCommand: aiMessage.startCommand
+                                })
+                            }
                         } catch {
-
-                            aiMessage = null
-                        }
-
-
-                        if (aiMessage?.fileTree) {
-
-                            setFileTree(
-                                aiMessage.fileTree || {}
-                            )
+                            // Keep displaying malformed AI messages as text.
                         }
 
 
@@ -371,6 +370,18 @@ const Project = () => {
 
     }, [projectId, navigate])
 
+    useEffect(() => {
+        if (!webContainer) return
+
+        const handleServerReady = (_port, url) => {
+            setIframeUrl(url)
+            setRunStatus('ready')
+        }
+
+        webContainer.on('server-ready', handleServerReady)
+        return () => webContainer.off('server-ready', handleServerReady)
+    }, [webContainer])
+
 
     /* =========================================================
        AUTO SCROLL CHAT
@@ -414,6 +425,82 @@ const Project = () => {
                 console.log(err)
 
             })
+    }
+
+    const appendRunOutput = (chunk) => {
+        setRunOutput(prev => [...prev, String(chunk)].slice(-200))
+    }
+
+    const runProject = async () => {
+        if (!webContainer) {
+            setRunStatus('error')
+            appendRunOutput('WebContainer is still starting. Try again in a moment.')
+            return
+        }
+
+        if (!Object.keys(fileTree).length) {
+            setRunStatus('error')
+            appendRunOutput('No files are available to run. Ask the AI to create a project first.')
+            return
+        }
+
+        setRunStatus('installing')
+        setRunOutput([])
+        setIframeUrl(null)
+
+        try {
+            await webContainer.mount(fileTree)
+
+            if (runProcess) {
+                runProcess.kill()
+                setRunProcess(null)
+            }
+
+            const packageContents = fileTree['package.json']?.file?.contents
+            let packageJson = {}
+            if (packageContents) {
+                try {
+                    packageJson = JSON.parse(packageContents)
+                } catch {
+                    throw new Error('package.json contains invalid JSON')
+                }
+            }
+
+            const installProcess = await webContainer.spawn('npm', ['install'])
+            const installOutput = installProcess.output.pipeTo(new WritableStream({
+                write: appendRunOutput
+            }))
+            const installExitCode = await installProcess.exit
+            await installOutput
+
+            if (installExitCode !== 0) {
+                throw new Error(`Dependency installation failed with exit code ${installExitCode}`)
+            }
+
+            const configuredCommand = projectCommands.startCommand
+            const script = packageJson.scripts?.dev
+                ? ['run', 'dev', '--', '--host', '0.0.0.0']
+                : packageJson.scripts?.start
+                    ? ['run', 'start']
+                    : null
+            const command = configuredCommand
+                ? [configuredCommand.mainItem, configuredCommand.commands]
+                : script
+                ? ['npm', script]
+                : ['node', [packageJson.main || 'app.js']]
+
+            setRunStatus('running')
+            appendRunOutput(`Starting ${command[0]} ${command[1].join(' ')}`)
+            const nextProcess = await webContainer.spawn(command[0], command[1])
+            nextProcess.output.pipeTo(new WritableStream({
+                write: appendRunOutput
+            }))
+            setRunProcess(nextProcess)
+        } catch (error) {
+            console.error('Unable to run project:', error)
+            setRunStatus('error')
+            appendRunOutput(error.message || 'Unable to run project')
+        }
     }
 
 
@@ -996,94 +1083,32 @@ const Project = () => {
                         <div className='flex shrink-0 items-center gap-2 px-3'>
 
                             <button
-                                onClick={async () => {
-
-                                    await webContainer.mount(
-                                        fileTree
-                                    )
-
-
-                                    const installProcess =
-                                        await webContainer.spawn(
-                                            "npm",
-                                            ["install"]
-                                        )
-
-
-                                    installProcess.output.pipeTo(
-                                        new WritableStream({
-
-                                            write(chunk) {
-
-                                                console.log(
-                                                    chunk
-                                                )
-
-                                            }
-
-                                        })
-                                    )
-
-
-                                    if (runProcess) {
-                                        runProcess.kill()
-                                    }
-
-
-                                    let tempRunProcess =
-                                        await webContainer.spawn(
-                                            "npm",
-                                            ["start"]
-                                        )
-
-
-                                    tempRunProcess.output.pipeTo(
-                                        new WritableStream({
-
-                                            write(chunk) {
-
-                                                console.log(
-                                                    chunk
-                                                )
-
-                                            }
-
-                                        })
-                                    )
-
-
-                                    setRunProcess(
-                                        tempRunProcess
-                                    )
-
-
-                                    webContainer.on(
-                                        'server-ready',
-                                        (port, url) => {
-
-                                            console.log(
-                                                port,
-                                                url
-                                            )
-
-                                            setIframeUrl(
-                                                url
-                                            )
-
-                                        }
-                                    )
-
-                                }}
+                                onClick={runProject}
+                                disabled={!webContainer || runStatus === 'installing' || runStatus === 'running'}
                                 className='flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-500 active:scale-[0.98]'
                             >
 
                                 <i className='ri-play-fill'></i>
 
-                                Run
+                                {runStatus === 'installing' ? 'Installing...' : runStatus === 'running' ? 'Running' : 'Run'}
 
                             </button>
 
                         </div>
+
+                        {runOutput.length > 0 && (
+                            <details className='shrink-0 border-t border-neutral-800 bg-[#0b0b0b]' open={runStatus === 'error'}>
+                                <summary className='flex cursor-pointer list-none items-center justify-between px-4 py-2 text-[11px] font-medium text-neutral-500'>
+                                    <span>Run output</span>
+                                    <span className={runStatus === 'error' ? 'text-red-400' : runStatus === 'ready' ? 'text-emerald-400' : 'text-amber-400'}>
+                                        {runStatus}
+                                    </span>
+                                </summary>
+                                <pre className='max-h-32 overflow-auto whitespace-pre-wrap border-t border-neutral-900 px-4 py-3 font-mono text-[11px] leading-5 text-neutral-500'>
+                                    {runOutput.join('')}
+                                </pre>
+                            </details>
+                        )}
 
                     </div>
 

@@ -96,3 +96,29 @@ export const getProjectById = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const updateFileTree = async (req, res) => {
+    try {
+        const { projectId, fileTree } = req.body;
+
+        if (!projectId || !fileTree || typeof fileTree !== 'object' || Array.isArray(fileTree)) {
+            return res.status(400).json({ error: 'Project ID and a valid file tree are required' });
+        }
+
+        const loggedInUser = await userModel.findOne({ email: req.user.email }).select('_id');
+        const project = await projectModel.findOneAndUpdate(
+            { _id: projectId, users: loggedInUser?._id },
+            { $set: { fileTree } },
+            { new: true, runValidators: true }
+        );
+
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        return res.status(200).json({ fileTree: project.fileTree });
+    } catch (error) {
+        console.error('Error updating project file tree:', error);
+        return res.status(400).json({ error: error.message });
+    }
+};
