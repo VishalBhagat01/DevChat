@@ -69,7 +69,11 @@ export const logoutUserController = async (req, res) => {
         const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
         if (token) {
-            await redisClient.set(`blacklist_${token}`, 'logout', 'EX', 24 * 60 * 60);
+            try {
+                await redisClient.set(`blacklist_${token}`, 'logout', 'EX', 24 * 60 * 60);
+            } catch (redisErr) {
+                // Redis offline or unauthenticated
+            }
         }
 
         res.clearCookie("token");

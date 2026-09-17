@@ -1,119 +1,157 @@
-import React, { useContext, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import axios from '../config/axios'
-import { UserContext } from '../context/user.context'
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from '../config/axios';
+import { UserContext } from '../context/user.context';
+import { sounds } from '../utils/soundEffects';
 
 const Login = () => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    })
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const { setUser } = useContext(UserContext)
-    const navigate = useNavigate()
+  const { setUser } = useContext(UserContext);
+  const navigate = useNavigate();
 
-    const handleChange = (event) => {
-        const { name, value } = event.target
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrorMsg('');
+  };
 
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value
-        }))
+  const submitHandler = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      const { data } = await axios.post('/users/login', formData);
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+      sounds.playChime();
+      navigate('/');
+    } catch (err) {
+      console.error('Login error:', err);
+      setErrorMsg(
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.msg ||
+        'Invalid email or password.'
+      );
+      sounds.playError();
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const submitHandler = async (e) => {
-        e.preventDefault()
+  return (
+    <div className="relative flex min-h-screen items-center justify-center bg-[#07070a] px-6 text-[#f4f4f5] selection:bg-indigo-500/30 selection:text-indigo-200">
+      {/* Ambient background glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[450px] w-[600px] rounded-full bg-gradient-to-b from-indigo-500/15 via-purple-500/5 to-transparent blur-3xl" />
+        <div className="absolute -bottom-20 right-1/4 h-[350px] w-[350px] rounded-full bg-cyan-500/10 blur-3xl" />
+      </div>
 
-        try {
-            const { data } = await axios.post('/users/login', formData)
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-white/[0.1] bg-[#0e0e16]/90 p-8 shadow-2xl shadow-black/80 backdrop-blur-xl">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+            <i className="ri-code-box-fill text-2xl"></i>
+          </div>
 
-            console.log(data)
-
-            localStorage.setItem('token', data.token)
-            setUser(data.user)
-
-            navigate('/')
-        } catch (err) {
-            console.log(err.response?.data)
-        }
-    }
-
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-6">
-            <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl backdrop-blur">
-
-                {/* Header */}
-                <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
-                      Welcome Back
-                    </h1>
-
-                    <p className="mt-3 text-zinc-400">
-                        Sign in to continue to{' '}
-                        <span className="text-white">your workspace</span>.
-                    </p>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={submitHandler} className="space-y-5">
-
-                    {/* Email */}
-                    <div>
-                      
-
-                        <input
-                            name="email"
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="Email"
-                            required
-                            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                      
-
-                        <input
-                            name="password"
-                            id="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder="Password"
-                            required
-                            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-                        />
-                    </div>
-
-                    {/* Login Button */}
-                    <button
-                        type="submit"
-                        className="w-full rounded-xl bg-violet-600 py-3 font-semibold text-white transition-all duration-200 hover:bg-violet-500 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98]"
-                    >
-                        Login
-                    </button>
-
-                </form>
-
-                {/* Footer */}
-                <p className="mt-6 text-center text-sm text-zinc-400">
-                    Don't have an account?{" "}
-                    <button
-                        type="button"
-                        onClick={() => navigate("/register")}
-                        className="font-medium text-violet-400 transition hover:text-violet-300"
-                    >
-                        Sign up
-                    </button>
-                </p>
-
-            </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Welcome back to DevChat
+          </h1>
+          <p className="mt-2 text-xs text-neutral-400">
+            Sign in to continue to your collaborative AI cloud workspace
+          </p>
         </div>
-    )
-}
 
-export default Login
+        {/* Error Alert */}
+        {errorMsg && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3.5 py-2.5 text-xs text-rose-300">
+            <i className="ri-error-warning-line text-sm text-rose-400"></i>
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={submitHandler} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              Email Address
+            </label>
+            <div className="relative flex items-center">
+              <i className="ri-mail-line absolute left-3.5 text-neutral-500 text-sm"></i>
+              <input
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="name@company.com"
+                required
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-indigo-500 focus:bg-white/[0.04] transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+              Password
+            </label>
+            <div className="relative flex items-center">
+              <i className="ri-lock-line absolute left-3.5 text-neutral-500 text-sm"></i>
+              <input
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-10 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-indigo-500 focus:bg-white/[0.04] transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 text-neutral-500 hover:text-neutral-300"
+              >
+                <i className={showPassword ? 'ri-eye-off-line' : 'ri-eye-line'}></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3 text-xs font-semibold text-white shadow-xl shadow-indigo-950/50 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <i className="ri-loader-4-line animate-spin text-sm"></i>
+                Signing in...
+              </span>
+            ) : (
+              'Sign In to DevChat'
+            )}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-neutral-500">
+          Don't have an account?{' '}
+          <button
+            type="button"
+            onClick={() => navigate('/register')}
+            className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            Create one for free
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
