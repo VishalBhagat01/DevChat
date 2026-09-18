@@ -74,8 +74,8 @@ body,
 }
 
 .border-glow {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
 }
 
 /* Animations */

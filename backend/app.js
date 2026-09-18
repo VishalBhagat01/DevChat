@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import morgan from 'morgan';
 import connectDB from './db/db.js';
@@ -10,10 +11,9 @@ import { corsOptions } from './config/cors.js';
 
 connectDB();
 
-
 const app = express();
-app.use(cors(corsOptions));
 app.use(morgan('dev'));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -28,6 +28,14 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('[Server Error]', err.message || err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error'
+  });
 });
 
 export default app;

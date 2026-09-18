@@ -38,7 +38,7 @@ const EditorTabs = ({
               onClick={() => onSelectFile(file)}
               className={`group relative flex cursor-pointer items-center gap-2 border-r border-white/[0.06] px-3.5 text-xs transition-all ${
                 isActive
-                  ? 'bg-[#09090b] text-white font-medium shadow-[inset_0_-2px_0_0_#6366f1]'
+                  ? 'bg-[#09090b] text-white font-medium shadow-[inset_0_-2px_0_0_#3b82f6]'
                   : 'bg-transparent text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200'
               }`}
             >

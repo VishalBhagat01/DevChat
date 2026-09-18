@@ -62,11 +62,11 @@ const FileExplorer = ({
   };
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-white/[0.08] bg-[#0c0c10] select-none">
+    <aside className="flex h-full w-full flex-col bg-[#0c0c10] select-none">
       {/* Explorer Header */}
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-white/[0.08] px-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-          <i className="ri-folders-line text-indigo-400"></i>
+          <i className="ri-folders-line text-blue-400"></i>
           <span>Explorer</span>
         </div>
 
@@ -93,7 +93,7 @@ const FileExplorer = ({
       {/* Search Files */}
       {files.length > 5 && (
         <div className="border-b border-white/[0.05] p-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.02] px-2 py-1 focus-within:border-indigo-500/40">
+          <div className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.02] px-2 py-1 focus-within:border-blue-500/40">
             <i className="ri-search-line text-xs text-neutral-500"></i>
             <input
               type="text"
@@ -120,8 +120,8 @@ const FileExplorer = ({
         {/* Inline Create Input */}
         {isCreating && (
           <form onSubmit={handleConfirmCreate} className="mb-1 px-1">
-            <div className="flex items-center gap-1.5 rounded-md border border-indigo-500/50 bg-indigo-500/10 px-2 py-1">
-              <i className="ri-file-add-line text-xs text-indigo-400"></i>
+            <div className="flex items-center gap-1.5 rounded-md border border-blue-500/50 bg-blue-500/10 px-2 py-1">
+              <i className="ri-file-add-line text-xs text-blue-400"></i>
               <input
                 type="text"
                 autoFocus
@@ -149,7 +149,7 @@ const FileExplorer = ({
                 onClick={handleStartCreate}
                 className="mt-3 inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-[11px] text-neutral-300 hover:bg-white/[0.06]"
               >
-                <i className="ri-add-line text-xs text-indigo-400"></i>
+                <i className="ri-add-line text-xs text-blue-400"></i>
                 Create first file
               </button>
             )}
@@ -164,7 +164,7 @@ const FileExplorer = ({
             if (isRenaming) {
               return (
                 <form key={file} onSubmit={handleConfirmRename} className="px-1 py-0.5">
-                  <div className="flex items-center gap-1 rounded border border-indigo-500 bg-indigo-500/10 px-2 py-1">
+                  <div className="flex items-center gap-1 rounded border border-blue-500 bg-blue-500/10 px-2 py-1">
                     <FileIcon filename={file} className="text-xs shrink-0" />
                     <input
                       type="text"
@@ -188,7 +188,7 @@ const FileExplorer = ({
                 }}
                 className={`group flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-indigo-600/15 text-white font-medium ring-1 ring-inset ring-indigo-500/25 shadow-sm'
+                    ? 'bg-blue-600/15 text-white font-medium ring-1 ring-inset ring-blue-500/25 shadow-sm'
                     : 'text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200'
                 }`}
               >

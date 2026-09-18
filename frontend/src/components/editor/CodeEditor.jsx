@@ -45,7 +45,7 @@ const CodeEditor = ({
         'editor.selectionBackground': '#3e445177',
         'editorLineNumber.foreground': '#3f3f46',
         'editorLineNumber.activeForeground': '#a1a1aa',
-        'editorCursor.foreground': '#6366f1',
+        'editorCursor.foreground': '#3b82f6',
         'editorWhitespace.foreground': '#27272a',
         'editorWidget.background': '#111118',
         'editorWidget.border': '#27272a',
@@ -100,11 +100,10 @@ const CodeEditor = ({
 
   if (!currentFile) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[#09090d] px-6 text-center">
-        {/* Glow halo */}
+      <div className="flex h-full flex-col items-center justify-center bg-[#09090b] px-6 text-center">
+        {/* Sleek icon card */}
         <div className="relative mb-6">
-          <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 blur-2xl" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-[#121218] text-indigo-400 shadow-2xl">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-[#121217] text-blue-400 shadow-2xl">
             <i className="ri-code-s-slash-line text-3xl"></i>
           </div>
         </div>
@@ -122,16 +121,16 @@ const CodeEditor = ({
             onClick={onNewFileClick}
             className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-neutral-200 transition-all hover:bg-white/[0.08] hover:text-white active:scale-95"
           >
-            <i className="ri-add-line text-sm text-indigo-400"></i>
+            <i className="ri-add-line text-sm text-blue-400"></i>
             <span>Create New File</span>
           </button>
 
           <button
             type="button"
             onClick={() => onAskAiToCreate?.('Create a full Express server with REST API routes and package.json')}
-            className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-600/20 px-3.5 py-2 text-xs font-medium text-indigo-300 transition-all hover:bg-indigo-600/30 hover:text-white active:scale-95"
+            className="flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-600/15 px-3.5 py-2 text-xs font-medium text-blue-300 transition-all hover:bg-blue-600/25 hover:text-white active:scale-95"
           >
-            <i className="ri-sparkling-fill text-sm text-indigo-400"></i>
+            <i className="ri-sparkling-fill text-sm text-blue-400"></i>
             <span>Ask AI for Express App</span>
           </button>
         </div>
@@ -182,7 +181,7 @@ const CodeEditor = ({
             title="Save file (Ctrl+S)"
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
               isDirty
-                ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-900/40'
+                ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-sm shadow-blue-900/40'
                 : 'hover:bg-white/[0.06] hover:text-neutral-200 text-neutral-400'
             }`}
           >

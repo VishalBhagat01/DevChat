@@ -24,7 +24,7 @@ const ShortcutsModal = ({ isOpen, onClose }) => {
       >
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5 mb-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400">
               <i className="ri-keyboard-line text-sm"></i>
             </div>
             <h3 className="text-sm font-semibold text-white">Keyboard Shortcuts</h3>

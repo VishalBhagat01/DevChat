@@ -8,18 +8,22 @@ export const createUserController = async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
+        console.warn('[Register Validation Failed]', errors.array());
         return res.status(400).json({ errors: errors.array() });
     }
 
     try {
+        console.log(`[Register Attempt] for email: ${req.body.email}`);
         const user = await createService(req.body.email, req.body.password);
 
         const token = await user.generateJWT();
         delete user._doc.password;
 
-        res.status(201).json({ user, token });
+        console.log(`[Register Success] User registered: ${user.email}`);
+        res.status(201).json({ user, token, message: 'User registered successfully' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error('[Register Error]', error.message || error);
+        res.status(400).json({ error: error.message, message: error.message });
     }
 }
 
@@ -27,31 +31,37 @@ export const loginUserController = async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
+        console.warn('[Login Validation Failed]', errors.array());
         return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-        const {email , password} = req.body;
+        const { email, password } = req.body;
+        console.log(`[Login Attempt] for email: ${email}`);
 
         const user = await userModel.findOne({ email }).select('+password');
 
-        if(!user){
-            return res.status(400).json({ error: 'Invalid email or password' });
+        if (!user) {
+            console.warn(`[Login Failed] User not found: ${email}`);
+            return res.status(400).json({ error: 'Invalid email or password', message: 'Invalid email or password' });
         }
 
         const isMatch = await user.isValidPassword(password);
 
         if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid email or password' });
+            console.warn(`[Login Failed] Invalid password for: ${email}`);
+            return res.status(400).json({ error: 'Invalid email or password', message: 'Invalid email or password' });
         }
 
         const token = await user.generateJWT();
         delete user._doc.password;
 
-        res.status(200).json({ user, token });
+        console.log(`[Login Success] User logged in: ${email}`);
+        res.status(200).json({ user, token, message: 'Login successful' });
 
-    } catch (err){
-        res.status(400).json({ error: err.message });
+    } catch (err) {
+        console.error('[Login Controller Error]', err.message || err);
+        res.status(400).json({ error: err.message, message: err.message });
     }
 }
 

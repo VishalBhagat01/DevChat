@@ -47,17 +47,16 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#07070a] px-6 text-[#f4f4f5] selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#09090b] px-6 text-[#f4f4f5] selection:bg-blue-500/30 selection:text-blue-200">
       {/* Ambient background glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[450px] w-[600px] rounded-full bg-gradient-to-b from-indigo-500/15 via-purple-500/5 to-transparent blur-3xl" />
-        <div className="absolute -bottom-20 right-1/4 h-[350px] w-[350px] rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[450px] w-[600px] rounded-full bg-blue-500/[0.04] blur-3xl" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-white/[0.1] bg-[#0e0e16]/90 p-8 shadow-2xl shadow-black/80 backdrop-blur-xl">
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111116] p-8 shadow-2xl shadow-black/80">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10">
             <i className="ri-code-box-fill text-2xl"></i>
           </div>
 
@@ -92,7 +91,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="name@company.com"
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-indigo-500 focus:bg-white/[0.04] transition-all"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 focus:bg-white/[0.04] transition-all"
               />
             </div>
           </div>
@@ -110,7 +109,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-10 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-indigo-500 focus:bg-white/[0.04] transition-all"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.02] pl-10 pr-10 py-2.5 text-xs text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 focus:bg-white/[0.04] transition-all"
               />
               <button
                 type="button"
@@ -125,7 +124,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3 text-xs font-semibold text-white shadow-xl shadow-indigo-950/50 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full rounded-xl bg-blue-600 py-3 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -144,7 +143,7 @@ const Login = () => {
           <button
             type="button"
             onClick={() => navigate('/register')}
-            className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
             Create one for free
           </button>

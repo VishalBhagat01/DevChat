@@ -148,7 +148,7 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
           <div
             className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
               isAI
-                ? 'bg-indigo-600 text-white shadow-[0_0_8px_rgba(99,102,241,0.6)]'
+                ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(59,130,246,0.6)]'
                 : 'bg-neutral-800 text-neutral-300'
             }`}
           >
@@ -159,7 +159,7 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
           {isAI ? 'DevChat Copilot' : isCurrentUser ? 'You' : msg.sender?.email || 'Team'}
         </span>
         {isAI && (
-          <span className="rounded-full bg-indigo-500/10 px-1.5 py-0.2 text-[9px] font-semibold text-indigo-400 border border-indigo-500/20">
+          <span className="rounded-full bg-blue-500/10 px-1.5 py-0.2 text-[9px] font-semibold text-blue-400 border border-blue-500/20">
             Gemini 3.1
           </span>
         )}
@@ -169,10 +169,10 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
       <div
         className={`relative max-w-[92%] rounded-2xl p-3.5 text-xs sm:max-w-[85%] ${
           isCurrentUser
-            ? 'rounded-tr-sm bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-950/30'
+            ? 'rounded-tr-sm bg-[#161620] border border-blue-500/30 text-white shadow-lg shadow-black/50'
             : isAI
-            ? 'rounded-tl-sm border border-white/[0.08] bg-[#101018] text-neutral-200 shadow-xl shadow-black/40'
-            : 'rounded-tl-sm border border-white/[0.06] bg-[#14141c] text-neutral-200'
+            ? 'rounded-tl-sm border border-white/[0.08] bg-[#0f0f14] text-neutral-200 shadow-xl shadow-black/40'
+            : 'rounded-tl-sm border border-white/[0.06] bg-[#121218] text-neutral-200'
         }`}
       >
         {/* Message Content */}
@@ -195,10 +195,10 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
 
             {/* Generated Files Pill Bar */}
             {generatedFiles.length > 0 && (
-              <div className="mt-3 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.07] p-3">
+              <div className="mt-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300">
-                    <i className="ri-folder-check-line text-sm text-indigo-400"></i>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-300">
+                    <i className="ri-folder-check-line text-sm text-blue-400"></i>
                     Files Updated ({generatedFiles.length})
                   </span>
                   <span className="text-[10px] text-neutral-400">
@@ -215,11 +215,11 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
                         onOpenFile?.(file);
                         sounds.playClick();
                       }}
-                      className="group/file flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0d0d14] px-2.5 py-1 text-[11px] text-neutral-300 transition-all hover:border-indigo-500/50 hover:bg-indigo-600/20 hover:text-white"
+                      className="group/file flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0d0d14] px-2.5 py-1 text-[11px] text-neutral-300 transition-all hover:border-blue-500/50 hover:bg-blue-600/20 hover:text-white"
                     >
                       <FileIcon filename={file} className="text-xs" />
                       <span className="font-medium">{file}</span>
-                      <i className="ri-arrow-right-up-line text-neutral-500 group-hover/file:text-indigo-300 text-[10px]"></i>
+                      <i className="ri-arrow-right-up-line text-neutral-500 group-hover/file:text-blue-300 text-[10px]"></i>
                     </button>
                   ))}
                 </div>
@@ -264,7 +264,7 @@ const MessageItem = ({ msg, currentUser, onOpenFile, onOpenInEditor }) => {
               onClick={handleSpeak}
               title={isSpeaking ? 'Stop speaking' : 'Read aloud'}
               className={`flex items-center gap-1 rounded p-1 hover:bg-white/[0.08] ${
-                isSpeaking ? 'text-indigo-400 animate-pulse' : 'hover:text-neutral-300'
+                isSpeaking ? 'text-blue-400 animate-pulse' : 'hover:text-neutral-300'
               }`}
             >
               <i

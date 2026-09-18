@@ -93,19 +93,18 @@ const Home = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#07070a] text-[#f4f4f5] selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] selection:bg-blue-500/30 selection:text-blue-200">
       {/* Background ambient lighting */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/5 blur-3xl" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-blue-500/[0.03] blur-3xl" />
       </div>
 
       {/* Top Navbar */}
-      <header className="relative z-10 border-b border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-md">
+      <header className="relative z-10 border-b border-white/[0.08] bg-[#0c0c10]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-10">
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 ring-1 ring-white/20">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10">
               <i className="ri-code-box-fill text-lg"></i>
             </div>
             <div>
@@ -113,7 +112,7 @@ const Home = () => {
                 <span className="font-bold text-sm tracking-tight text-white">
                   DevChat
                 </span>
-                <span className="rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.2 text-[10px] font-semibold text-indigo-300">
+                <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.2 text-[10px] font-semibold text-blue-400">
                   Cloud IDE
                 </span>
               </div>
@@ -150,7 +149,7 @@ const Home = () => {
         {/* Hero Banner */}
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between border-b border-white/[0.06] pb-10">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300 mb-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400 mb-3">
               <i className="ri-sparkling-fill text-xs"></i>
               <span>Powered by Google Gemini 3.1 & WebContainers</span>
             </div>
@@ -168,7 +167,7 @@ const Home = () => {
               setIsModalOpen(true);
               sounds.playClick();
             }}
-            className="group flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 text-sm font-semibold text-white shadow-xl shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95 shrink-0"
+            className="group flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition-all hover:bg-blue-500 active:scale-95 shrink-0"
           >
             <i className="ri-add-line text-lg transition-transform duration-200 group-hover:rotate-90"></i>
             <span>New Workspace</span>
@@ -189,7 +188,7 @@ const Home = () => {
               <div
                 key={idx}
                 onClick={() => handleCreateProject(tpl.starterName)}
-                className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0e0e16] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-indigo-500/40 hover:bg-[#12121e] hover:shadow-2xl hover:shadow-indigo-950/20"
+                className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0e0e13] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-blue-500/40 hover:bg-[#121218] hover:shadow-2xl hover:shadow-black/60"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.05] ring-1 ring-white/10">
@@ -200,14 +199,14 @@ const Home = () => {
                   </span>
                 </div>
 
-                <h3 className="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                <h3 className="text-sm font-semibold text-white group-hover:text-blue-300 transition-colors">
                   {tpl.title}
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-neutral-400">
                   {tpl.desc}
                 </p>
 
-                <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span>Create from template</span>
                   <i className="ri-arrow-right-line"></i>
                 </div>
@@ -229,7 +228,7 @@ const Home = () => {
             </div>
 
             {/* Search Input */}
-            <div className="flex w-full sm:w-72 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-xs focus-within:border-indigo-500/40 focus-within:bg-white/[0.05]">
+            <div className="flex w-full sm:w-72 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-xs focus-within:border-blue-500/40 focus-within:bg-white/[0.05]">
               <i className="ri-search-line text-neutral-500"></i>
               <input
                 type="text"
@@ -253,7 +252,7 @@ const Home = () => {
           {/* Grid of Projects */}
           {isLoading ? (
             <div className="py-20 text-center text-xs text-neutral-500">
-              <i className="ri-loader-4-line mr-2 animate-spin text-indigo-400 text-lg"></i>
+              <i className="ri-loader-4-line mr-2 animate-spin text-blue-400 text-lg"></i>
               Loading workspaces...
             </div>
           ) : filteredProjects.length === 0 ? (
@@ -273,7 +272,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500"
                 >
                   <i className="ri-add-line"></i>
                   <span>Create Workspace</span>
@@ -289,20 +288,20 @@ const Home = () => {
                     navigate('/project', { state: { project: proj } });
                     sounds.playClick();
                   }}
-                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d14] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-indigo-500/40 hover:bg-[#11111c] hover:shadow-xl hover:shadow-black/60"
+                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c11] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-blue-500/40 hover:bg-[#111118] hover:shadow-xl hover:shadow-black/60"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600/10 text-indigo-400 ring-1 ring-inset ring-indigo-500/20 group-hover:scale-105 transition-transform">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-400 ring-1 ring-inset ring-blue-500/20 group-hover:scale-105 transition-transform">
                       <i className="ri-folder-code-line text-lg"></i>
                     </div>
 
-                    <div className="flex items-center gap-1 text-xs text-neutral-500 group-hover:text-indigo-400 transition-colors">
+                    <div className="flex items-center gap-1 text-xs text-neutral-500 group-hover:text-blue-400 transition-colors">
                       <span>Launch Studio</span>
                       <i className="ri-arrow-right-up-line"></i>
                     </div>
                   </div>
 
-                  <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200 transition-colors">
+                  <h3 className="truncate text-base font-semibold text-white group-hover:text-blue-200 transition-colors">
                     {proj.name}
                   </h3>
 
@@ -333,13 +332,13 @@ const Home = () => {
           }}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.12] bg-[#11111a] shadow-2xl shadow-black/80"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.12] bg-[#111116] shadow-2xl shadow-black/80"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-white/[0.08] px-6 py-5 bg-[#141420]">
+            <div className="border-b border-white/[0.08] px-6 py-5 bg-[#14141c]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400 ring-1 ring-inset ring-indigo-500/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 ring-1 ring-inset ring-blue-500/30">
                     <i className="ri-folder-add-line text-xl"></i>
                   </div>
                   <div>
@@ -380,7 +379,7 @@ const Home = () => {
                   placeholder="e.g. ai-travel-agent"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full rounded-xl border border-white/[0.1] bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full rounded-xl border border-white/[0.1] bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 />
               </div>
 
@@ -395,7 +394,7 @@ const Home = () => {
                 <button
                   type="submit"
                   disabled={!projectName.trim()}
-                  className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-indigo-950/40 hover:bg-indigo-500 disabled:opacity-40 transition-all active:scale-95"
+                  className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 hover:bg-blue-500 disabled:opacity-40 transition-all active:scale-95"
                 >
                   Create & Launch
                 </button>

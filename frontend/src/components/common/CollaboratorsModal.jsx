@@ -43,9 +43,9 @@ const CollaboratorsModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-5 py-4 bg-[#151522]">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-5 py-4 bg-[#14141c]">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400 ring-1 ring-inset ring-indigo-500/30">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 ring-1 ring-inset ring-blue-500/30">
               <i className="ri-user-add-line text-base"></i>
             </div>
             <div>
@@ -71,7 +71,7 @@ const CollaboratorsModal = ({
         <div className="border-b border-white/[0.06] p-3 bg-black/20">
           <div className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] p-2">
             <div className="flex items-center gap-2 text-xs text-neutral-400">
-              <i className="ri-link text-indigo-400"></i>
+              <i className="ri-link text-blue-400"></i>
               <span className="truncate max-w-[220px] text-[11px]">
                 {window.location.href}
               </span>
@@ -79,7 +79,7 @@ const CollaboratorsModal = ({
             <button
               type="button"
               onClick={handleCopyInviteLink}
-              className="flex items-center gap-1 rounded-lg bg-indigo-600/20 px-2.5 py-1 text-[11px] font-medium text-indigo-300 hover:bg-indigo-600/30 hover:text-white transition-colors"
+              className="flex items-center gap-1 rounded-lg bg-blue-600/20 px-2.5 py-1 text-[11px] font-medium text-blue-300 hover:bg-blue-600/30 hover:text-white transition-colors"
             >
               {copiedLink ? (
                 <>
@@ -134,12 +134,12 @@ const CollaboratorsModal = ({
                   }}
                   className={`flex cursor-pointer items-center justify-between rounded-xl border p-2.5 text-xs transition-all ${
                     isSelected
-                      ? 'border-indigo-500/40 bg-indigo-600/15 text-white shadow-sm'
+                      ? 'border-blue-500/40 bg-blue-600/15 text-white shadow-sm'
                       : 'border-transparent text-neutral-300 hover:bg-white/[0.04]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-[11px] font-bold text-white">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
                       {u.email?.charAt(0)?.toUpperCase()}
                     </div>
                     <span className="font-medium">{u.email}</span>
@@ -148,7 +148,7 @@ const CollaboratorsModal = ({
                   <div
                     className={`flex h-4 w-4 items-center justify-center rounded-md border ${
                       isSelected
-                        ? 'border-indigo-500 bg-indigo-600 text-white'
+                        ? 'border-blue-500 bg-blue-600 text-white'
                         : 'border-neutral-700 bg-transparent'
                     }`}
                   >
@@ -180,7 +180,7 @@ const CollaboratorsModal = ({
                 sounds.playPop();
               }}
               disabled={selectedUserId.size === 0}
-              className="rounded-xl bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-lg shadow-indigo-950/40 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+              className="rounded-xl bg-blue-600 px-4 py-1.5 text-xs font-medium text-white shadow-lg shadow-blue-950/40 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
             >
               Add Selected
             </button>

@@ -109,7 +109,7 @@ const ChatInput = ({ onSendMessage, isAiThinking = false }) => {
   };
 
   return (
-    <div className="shrink-0 border-t border-white/[0.08] bg-[#0c0c12] p-3">
+    <div className="shrink-0 border-t border-white/[0.08] bg-[#0b0b0f] p-3">
       {/* Quick Prompt Chips */}
       <div className="mb-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {QUICK_PROMPTS.map((item, idx) => (
@@ -117,7 +117,7 @@ const ChatInput = ({ onSendMessage, isAiThinking = false }) => {
             key={idx}
             type="button"
             onClick={() => handleSelectQuickPrompt(item.prompt)}
-            className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-neutral-400 transition-all hover:border-indigo-500/40 hover:bg-indigo-600/10 hover:text-white active:scale-95"
+            className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-neutral-400 transition-all hover:border-blue-500/40 hover:bg-blue-600/10 hover:text-white active:scale-95"
           >
             {item.label}
           </button>
@@ -125,7 +125,7 @@ const ChatInput = ({ onSendMessage, isAiThinking = false }) => {
       </div>
 
       {/* Main Input Box */}
-      <div className="relative rounded-2xl border border-white/[0.1] bg-[#12121a] p-2 transition-all focus-within:border-indigo-500/50 focus-within:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+      <div className="relative rounded-2xl border border-white/[0.08] bg-[#121217] p-2 transition-all focus-within:border-blue-500/50 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.12)]">
         {/* Top bar inside input: Mode toggle & Voice */}
         <div className="flex items-center justify-between px-2 pb-1.5 border-b border-white/[0.04]">
           <button
@@ -136,14 +136,14 @@ const ChatInput = ({ onSendMessage, isAiThinking = false }) => {
             }}
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all ${
               aiMode
-                ? 'border border-indigo-500/40 bg-indigo-600/20 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
+                ? 'border border-blue-500/30 bg-blue-600/15 text-blue-300'
                 : 'border border-white/10 bg-white/[0.04] text-neutral-500 hover:text-neutral-300'
             }`}
             title="When active, messages automatically prompt the Gemini Copilot"
           >
             <i
               className={`text-xs ${
-                aiMode ? 'ri-sparkling-fill text-indigo-400' : 'ri-chat-1-line'
+                aiMode ? 'ri-sparkling-fill text-blue-400' : 'ri-chat-1-line'
               }`}
             ></i>
             <span>{aiMode ? 'AI Copilot Active' : 'Team Chat Only'}</span>
@@ -204,7 +204,7 @@ const ChatInput = ({ onSendMessage, isAiThinking = false }) => {
               disabled={!text.trim() || isAiThinking}
               className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
                 text.trim() && !isAiThinking
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95'
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-950/40 active:scale-95'
                   : 'bg-white/[0.05] text-neutral-600 cursor-not-allowed'
               }`}
             >

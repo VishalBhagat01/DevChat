@@ -196,7 +196,7 @@ const TerminalPreviewPanel = ({
                 type="button"
                 onClick={() => setAutoScroll(!autoScroll)}
                 className={`text-[10px] ${
-                  autoScroll ? 'text-indigo-400' : 'text-neutral-500 hover:text-neutral-300'
+                  autoScroll ? 'text-blue-400 font-medium' : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
                 Auto-scroll: {autoScroll ? 'ON' : 'OFF'}
@@ -214,7 +214,7 @@ const TerminalPreviewPanel = ({
           {/* Terminal Output */}
           <div
             ref={terminalEndRef}
-            className="min-h-0 flex-1 overflow-y-auto p-3 font-mono text-xs leading-5 text-neutral-300 selection:bg-indigo-500/30"
+            className="min-h-0 flex-1 overflow-y-auto p-3 font-mono text-xs leading-5 text-neutral-300 selection:bg-blue-500/30"
           >
             {runOutput.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-center text-neutral-600">
@@ -329,7 +329,7 @@ const TerminalPreviewPanel = ({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#12121c] text-indigo-400 shadow-xl">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#121217] text-blue-400 shadow-xl">
                   <i className="ri-global-line text-2xl"></i>
                 </div>
                 <h4 className="text-sm font-semibold text-white">
@@ -378,7 +378,7 @@ const TerminalPreviewPanel = ({
                       key={key}
                       className="flex items-center justify-between rounded-lg bg-black/40 px-2.5 py-1.5 text-neutral-300"
                     >
-                      <span className="text-indigo-400 font-semibold">{key}</span>
+                      <span className="text-blue-400 font-semibold">{key}</span>
                       <span className="text-neutral-500 truncate max-w-[200px]">{cmd}</span>
                     </div>
                   ))}

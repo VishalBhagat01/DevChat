@@ -73,7 +73,7 @@ const EditorStatusBar = ({
         {currentFile && (
           <>
             <span className="text-neutral-700">|</span>
-            <span className="capitalize text-indigo-400 font-medium">
+            <span className="capitalize text-blue-400 font-medium">
               {language}
             </span>
           </>

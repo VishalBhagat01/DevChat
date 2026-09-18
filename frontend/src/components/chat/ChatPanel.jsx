@@ -92,11 +92,11 @@ const ChatPanel = ({
   });
 
   return (
-    <aside className="relative flex h-full min-w-0 flex-col border-r border-white/[0.08] bg-[#0d0d12]">
+    <aside className="relative flex h-full min-w-0 flex-col border-r border-white/[0.08] bg-[#0c0c10]">
       {/* Chat Top Header */}
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#0f0f16] px-3.5">
+      <header className="flex h-11 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#0e0e13] px-3.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400 ring-1 ring-inset ring-indigo-500/30">
+          <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400 ring-1 ring-inset ring-blue-500/30">
             <i className="ri-sparkling-fill text-xs"></i>
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
           </div>
@@ -133,7 +133,7 @@ const ChatPanel = ({
             className="flex h-7 w-7 items-center justify-center rounded hover:bg-white/[0.06] hover:text-white text-xs"
           >
             <i
-              className={soundEnabled ? 'ri-volume-up-line text-indigo-400' : 'ri-volume-mute-line text-neutral-500'}
+              className={soundEnabled ? 'ri-volume-up-line text-blue-400' : 'ri-volume-mute-line text-neutral-500'}
             ></i>
           </button>
 
@@ -152,7 +152,7 @@ const ChatPanel = ({
             type="button"
             onClick={onOpenCollaborators}
             title="Manage Collaborators"
-            className="flex h-7 items-center gap-1 rounded bg-indigo-600/20 px-2 text-[11px] font-medium text-indigo-300 hover:bg-indigo-600/30 hover:text-white transition-colors"
+            className="flex h-7 items-center gap-1 rounded bg-blue-600/20 px-2 text-[11px] font-medium text-blue-300 hover:bg-blue-600/30 hover:text-white transition-colors"
           >
             <i className="ri-user-add-line text-xs"></i>
             <span className="hidden sm:inline">Invite</span>
@@ -245,8 +245,7 @@ const ChatPanel = ({
         {filteredMessages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="relative mb-3">
-              <div className="absolute -inset-3 rounded-full bg-indigo-500/10 blur-xl" />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#12121c] text-indigo-400">
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[#121217] text-blue-400">
                 <i className="ri-sparkling-fill text-xl"></i>
               </div>
             </div>

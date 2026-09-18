@@ -43,35 +43,35 @@ const CommandPalette = ({
       id: 'new-file',
       title: 'Create New File...',
       category: 'Actions',
-      icon: 'ri-file-add-line text-indigo-400',
+      icon: 'ri-file-add-line text-blue-400',
       action: () => onNewFile(),
     },
     {
       id: 'preview',
       title: 'Toggle Web Preview & Terminal',
       category: 'View',
-      icon: 'ri-window-line text-cyan-400',
+      icon: 'ri-window-line text-sky-400',
       action: () => onTogglePreview(),
     },
     {
       id: 'invite',
       title: 'Invite Collaborators...',
       category: 'Collaboration',
-      icon: 'ri-user-add-line text-amber-400',
+      icon: 'ri-user-add-line text-neutral-400',
       action: () => onOpenInvite(),
     },
     {
       id: 'shortcuts',
       title: 'Keyboard Shortcuts Cheat Sheet',
       category: 'Help',
-      icon: 'ri-keyboard-line text-purple-400',
+      icon: 'ri-keyboard-line text-neutral-400',
       action: () => onOpenShortcuts(),
     },
     {
       id: 'export',
       title: 'Download Project ZIP',
       category: 'Project',
-      icon: 'ri-download-cloud-2-line text-sky-400',
+      icon: 'ri-download-cloud-2-line text-blue-400',
       action: () => onExportZip(),
     },
   ];
@@ -115,11 +115,11 @@ const CommandPalette = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/[0.12] bg-[#12121a] shadow-2xl shadow-black/80"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/[0.12] bg-[#121217] shadow-2xl shadow-black/80"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Header */}
-        <div className="flex items-center gap-3 border-b border-white/[0.08] px-4 py-3 bg-[#151522]">
+        <div className="flex items-center gap-3 border-b border-white/[0.08] px-4 py-3 bg-[#14141c]">
           <i className="ri-search-line text-neutral-400"></i>
           <input
             ref={inputRef}
@@ -159,7 +159,7 @@ const CommandPalette = ({
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs transition-colors ${
                     isSelected
-                      ? 'bg-indigo-600/20 text-white border border-indigo-500/30'
+                      ? 'bg-blue-600/15 text-white border border-blue-500/30'
                       : 'text-neutral-300 hover:bg-white/[0.04]'
                   }`}
                 >
