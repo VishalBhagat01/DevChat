@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import projectModel from './models/project.model.js';
 import { generateResult } from './services/ai.service.js';
 import { corsOptions } from './config/cors.js';
+import redisClient from './services/redis.service.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -16,44 +17,62 @@ const io = new Server(server , {
 });
 
 io.use(async (socket, next) => {
-
     try {
-
         const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(' ')[ 1 ];
-        const projectId = socket.handshake.query.projectId;
-
-        if (!mongoose.Types.ObjectId.isValid(projectId)) {
-            return next(new Error('Invalid projectId'));
-        }
-
-
-        socket.project = await projectModel.findById(projectId);
-
+        const projectId = socket.handshake.query?.projectId;
 
         if (!token) {
-            return next(new Error('Authentication error'))
+            return next(new Error('Authentication error'));
+        }
+
+        let isBlackListed = null;
+        try {
+            isBlackListed = await redisClient.get(`blacklist_${token}`);
+        } catch (redisErr) {
+            // Redis error or unauthenticated, allow auth to proceed via JWT verification
+        }
+
+        if (isBlackListed) {
+            return next(new Error('Authentication error: Token is blacklisted'));
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        if (!decoded) {
-            return next(new Error('Authentication error'))
+        if (!decoded || (!decoded.id && !decoded._id)) {
+            return next(new Error('Authentication error'));
         }
 
+        if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
+            return next(new Error('Invalid projectId'));
+        }
+
+        const project = await projectModel.findById(projectId);
+        if (!project) {
+            return next(new Error('Project not found'));
+        }
+
+        const userId = (decoded.id || decoded._id).toString();
+        const isAuthorized = Array.isArray(project.users) && project.users.some(user => user.toString() === userId);
+
+        if (!isAuthorized) {
+            return next(new Error('Forbidden: You are not a collaborator on this project'));
+        }
 
         socket.user = decoded;
+        socket.project = project;
 
         next();
-
     } catch (error) {
-        next(error)
+        next(error);
     }
-
-})
-
+});
 
 io.on('connection', socket => {
-    socket.roomId = socket.project._id.toString()
+    if (!socket.project?._id) {
+        socket.disconnect(true);
+        return;
+    }
+
+    socket.roomId = socket.project._id.toString();
 
 
     console.log('a user connected');
