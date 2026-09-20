@@ -103,8 +103,12 @@ const Home = () => {
       <header className="relative z-10 border-b border-white/[0.08] bg-[#0c0c10]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-10">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10">
+          <div 
+            onClick={() => navigate('/')} 
+            className="flex items-center gap-3 cursor-pointer group" 
+            title="DevChat 3D Landing Page"
+          >
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10 group-hover:scale-105 transition-transform">
               <i className="ri-code-box-fill text-lg"></i>
             </div>
             <div>

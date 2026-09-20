@@ -93,7 +93,7 @@ const Project = () => {
 
   useEffect(() => {
     if (!projectId) {
-      navigate('/');
+      navigate('/dashboard');
       return;
     }
 
@@ -609,7 +609,7 @@ const Project = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             title="Return to Projects Dashboard"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95"
           >

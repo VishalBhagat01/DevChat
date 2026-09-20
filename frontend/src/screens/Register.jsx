@@ -24,7 +24,7 @@ const Register = () => {
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       sounds.playChime();
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Registration error:', err);
       setErrorMsg(
@@ -48,9 +48,14 @@ const Register = () => {
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111116] p-8 shadow-2xl shadow-black/80">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            title="Back to Landing Page"
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-white/10 hover:scale-105 transition-transform"
+          >
             <i className="ri-user-add-fill text-2xl"></i>
-          </div>
+          </button>
 
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Create your account
