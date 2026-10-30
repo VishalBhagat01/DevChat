@@ -8,6 +8,7 @@ import projectModel from './models/project.model.js';
 import { generateResult } from './services/ai.service.js';
 import { corsOptions } from './config/cors.js';
 import redisClient from './services/redis.service.js';
+import { checkSocketAiRateLimit } from './middleware/rateLimiter.middleware.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -90,6 +91,20 @@ io.on('connection', socket => {
 
         if (aiIsPresentInMessage) {
 
+            // Rate-limit @ai commands: 10 per minute per user
+            const rateCheck = checkSocketAiRateLimit(socket);
+            if (!rateCheck.allowed) {
+                socket.emit('project-message', {
+                    message: JSON.stringify({
+                        text: ` Rate limit exceeded. You can send another @ai message in ${Math.ceil(rateCheck.retryAfterMs / 1000)} seconds.`
+                    }),
+                    sender: {
+                        _id: 'ai',
+                        email: 'AI'
+                    }
+                });
+                return;
+            }
 
             const prompt = message.replace('@ai', '');
 

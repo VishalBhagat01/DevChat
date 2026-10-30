@@ -131,3 +131,97 @@ export const aiUserRateLimiter = rateLimit({
 
 // Combined AI rate limiter: applies both per-IP and per-user throttling
 export const aiRateLimiter = [aiIpRateLimiter, aiUserRateLimiter];
+
+// ─── Auth Rate Limiter ───────────────────────────────────────────────────────
+// Strict limit for /login and /register: 7 requests per 15 minutes per IP.
+// Defends against credential stuffing, brute force, and registration spam.
+export const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 7,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: new ResilientStore('rl:auth:'),
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
+    skipSuccessfulRequests: false,
+    message: {
+        error: 'Too many authentication attempts from this IP address. Please try again after 15 minutes.'
+    }
+});
+
+// ─── Sensitive Endpoints Rate Limiter ────────────────────────────────────────
+// For sensitive but authenticated endpoints like /projects/create, /projects/add-user.
+// Max 20 requests per 15 minutes per IP.
+export const sensitiveRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: new ResilientStore('rl:sensitive:'),
+    keyGenerator: (req) => {
+        const userId = req.user?.id || req.user?._id;
+        if (userId) {
+            return `user:${userId}`;
+        }
+        return ipKeyGenerator(req.ip);
+    },
+    message: {
+        error: 'Too many requests to this endpoint. Please slow down and try again later.'
+    }
+});
+
+// ─── General API Rate Limiter ────────────────────────────────────────────────
+// Blanket limit for all API routes: 100 requests per minute per IP.
+// Acts as a last-line-of-defense against DoS and abuse.
+export const generalRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: new ResilientStore('rl:general:'),
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
+    message: {
+        error: 'Too many requests from this IP address. Please try again shortly.'
+    }
+});
+
+// ─── Socket.IO AI Rate Limiter (in-memory, per-user) ────────────────────────
+// Returns a middleware-style function for socket events.
+// Max 10 @ai messages per minute per user.
+const socketAiBuckets = new Map();
+
+/**
+ * Check whether a socket user is allowed to make an @ai request.
+ * Returns { allowed: true } or { allowed: false, retryAfterMs }.
+ */
+export function checkSocketAiRateLimit(socket) {
+    const userId = (socket.user?.id || socket.user?._id || socket.id).toString();
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 minute
+    const maxHits = 10;
+
+    let bucket = socketAiBuckets.get(userId);
+    if (!bucket || now - bucket.windowStart > windowMs) {
+        // Start a new window
+        bucket = { windowStart: now, hits: 0 };
+        socketAiBuckets.set(userId, bucket);
+    }
+
+    bucket.hits += 1;
+
+    if (bucket.hits > maxHits) {
+        const retryAfterMs = windowMs - (now - bucket.windowStart);
+        return { allowed: false, retryAfterMs };
+    }
+
+    return { allowed: true };
+}
+
+// Periodic cleanup of stale socket rate-limit buckets (every 5 minutes)
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, bucket] of socketAiBuckets) {
+        if (now - bucket.windowStart > 2 * 60 * 1000) {
+            socketAiBuckets.delete(key);
+        }
+    }
+}, 5 * 60 * 1000).unref();

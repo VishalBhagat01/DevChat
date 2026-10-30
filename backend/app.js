@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import aiRoutes from './routes/ai.routes.js';
 import { corsOptions } from './config/cors.js';
+import { generalRateLimiter } from './middleware/rateLimiter.middleware.js';
 
 connectDB();
 
@@ -17,6 +18,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Global rate limit: 100 requests per minute per IP (applied before all routes)
+app.use(generalRateLimiter);
 
 app.use("/users" , userRoutes);
 app.use("/projects" , projectRoutes);
