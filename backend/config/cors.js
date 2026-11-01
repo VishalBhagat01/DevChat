@@ -12,15 +12,32 @@ export const isAllowedOrigin = (origin) => {
     }
 
     const configuredOrigins = getConfiguredOrigins();
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // ─── Production Safety: Block all cross-origin if CLIENT_URL is not set ───
+    // In production, an empty CLIENT_URL means misconfiguration — deny by default
+    // rather than silently allowing every origin with credentials.
+    if (isProduction && configuredOrigins.length === 0) {
+        console.error(
+            '[CORS FATAL] CLIENT_URL is not set in production! ' +
+            'All cross-origin requests will be blocked. ' +
+            'Set CLIENT_URL=https://your-frontend.com in your environment variables.'
+        );
+        return false;
+    }
 
     // In development or when no CLIENT_URL configured, allow all localhost and 127.0.0.1 origins on any port
-    if (process.env.NODE_ENV !== 'production' || configuredOrigins.length === 0) {
+    if (!isProduction && configuredOrigins.length === 0) {
         if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
             return true;
         }
+        // In development with no configured origins and a non-localhost origin, deny
+        return false;
     }
 
-    if (configuredOrigins.length === 0) {
+    // Allow localhost in non-production even when CLIENT_URL is set
+    // (so dev and staging can still work alongside configured origins)
+    if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
         return true;
     }
 
