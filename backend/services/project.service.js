@@ -29,7 +29,8 @@ export const getAllProjectsByUserId = async (userid) => {
         throw new Error('User ID is required');
     }
 
-    const allProjects = await projectModel.find({ users: userid });
+    // Priority 2.6: Use .lean() for read-only queries to eliminate Mongoose hydration overhead
+    const allProjects = await projectModel.find({ users: userid }).lean();
 
     return allProjects;
 }
@@ -55,7 +56,7 @@ export const addUserToProject = async (userIds, projectId) => {
         throw new Error('Invalid User ID or Project ID');
     }
 
-    const project = await projectModel.findById(projectId);
+    const project = await projectModel.findById(projectId).select('users').lean();
     if (!project) {
         throw new Error('Project not found');
     }
@@ -66,7 +67,7 @@ export const addUserToProject = async (userIds, projectId) => {
         projectId,
         { $addToSet: { users: { $each: newUsers } } },
         { new: true }
-    );
+    ).lean();
 
     return updatedProject;
 }

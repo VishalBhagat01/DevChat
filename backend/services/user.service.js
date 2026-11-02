@@ -16,7 +16,24 @@ export const createService = async (email, password) => {
     return user;
 }
 
-export const getAllUsersService = async ({userId}) => {
-    const users = await userModel.find({ _id: { $ne: userId } }).select('-password');
+// ─── Priority 2.3 & 2.6: Bounded Query, Search Filtering & .lean() ───────────
+export const getAllUsersService = async ({ userId, search = '', limit = 50, page = 1 }) => {
+    const query = { _id: { $ne: userId } };
+
+    if (search && typeof search === 'string' && search.trim()) {
+        const sanitized = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        query.email = { $regex: sanitized, $options: 'i' };
+    }
+
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const users = await userModel.find(query)
+        .select('-password')
+        .skip(skip)
+        .limit(parsedLimit)
+        .lean();
+
     return users;
 }

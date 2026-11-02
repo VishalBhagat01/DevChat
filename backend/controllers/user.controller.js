@@ -67,7 +67,9 @@ export const loginUserController = async (req, res) => {
 
 export const profileUserController = async (req, res) => {
     try {
-        const user = await userModel.findById(req.user.id);
+        const userId = req.user.id || req.user._id;
+        // Priority 2.6: Use .lean() and exclude password
+        const user = await userModel.findById(userId).select('-password').lean();
         res.status(200).json({ user });
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -93,14 +95,22 @@ export const logoutUserController = async (req, res) => {
     }
 }
 
-
 export const getAllUsersController = async (req, res) => {
     try {
+        // Priority 2.1: Use req.user.id directly from JWT payload, eliminating redundant findOne
+        const userId = req.user.id || req.user._id;
 
-        const loggedInUserId = await userModel.findOne({ email: req.user.email }).select('_id');
+        // Priority 2.3: Support query filter & bounded pagination
+        const search = req.query.q || req.query.search || '';
+        const limit = req.query.limit;
+        const page = req.query.page;
 
-
-        const users = await userService.getAllUsersService({userId: loggedInUserId._id});
+        const users = await userService.getAllUsersService({
+            userId,
+            search,
+            limit,
+            page
+        });
 
         res.status(200).json({ users });
     } catch (error) {

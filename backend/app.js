@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import compression from 'compression';
 import connectDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
 import projectRoutes from './routes/project.routes.js';
@@ -16,29 +17,33 @@ connectDB();
 const app = express();
 
 // ─── Security Headers (helmet) ───────────────────────────────────────────────
-// Sets X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security,
-// X-XSS-Protection, Referrer-Policy, and other hardening headers automatically.
 app.use(helmet({
-  // Allow cross-origin requests for the API (CORS handles origin control)
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  // HSTS: enforce HTTPS for 1 year, include subdomains, allow preload
   hsts: {
-    maxAge: 31536000, // 1 year in seconds
+    maxAge: 31536000,
     includeSubDomains: true,
     preload: true
   },
-  // Prevent clickjacking by denying framing entirely
   frameguard: { action: 'deny' },
-  // Disable Content-Security-Policy in helmet (configure separately if needed for a frontend)
   contentSecurityPolicy: false
+}));
+
+// ─── Priority 2.5: HTTP Response Compression (gzip / deflate) ───────────────
+// Compresses project file trees, AI code generations, and JSON responses to reduce latency & cloud egress costs
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  threshold: 1024 // Only compress responses larger than 1KB
 }));
 
 app.use(morgan('dev'));
 app.use(cors(corsOptions));
 
 // ─── Bounded Request Body Size ───────────────────────────────────────────────
-// Prevents DoS via oversized payloads. 10MB allows moderate project file trees
-// while blocking multi-hundred-MB abuse payloads.
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

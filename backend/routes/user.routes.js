@@ -23,6 +23,8 @@ router.get('/profile', authUser, userController.profileUserController);
 
 router.get('/logout', authUser, userController.logoutUserController);
 
+// Priority 2.3: Supports /all and /search with optional ?q=...&limit=...&page=...
 router.get('/all', authUser, userController.getAllUsersController);
+router.get('/search', authUser, userController.getAllUsersController);
 
 export default router;
