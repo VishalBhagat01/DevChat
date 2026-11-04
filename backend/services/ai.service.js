@@ -94,6 +94,33 @@ export const generateResult = async (prompt) => {
         return response.text;
     } catch (error) {
         console.error("Gemini API Error:", error);
-        throw new Error("Failed to generate response from Gemini");
+        throw new Error(error.message || "Failed to generate response from Gemini");
+    }
+};
+
+export const generateResultStream = async (prompt, onChunk) => {
+    try {
+        const responseStream = await ai.models.generateContentStream({
+            model: "gemini-3.1-flash-lite",
+            contents: prompt,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+            },
+        });
+
+        let fullText = "";
+        for await (const chunk of responseStream) {
+            const chunkText = chunk.text || "";
+            fullText += chunkText;
+            if (onChunk && typeof onChunk === "function") {
+                onChunk(chunkText, fullText);
+            }
+        }
+
+        return fullText;
+    } catch (error) {
+        console.error("Gemini API Streaming Error:", error);
+        throw new Error(error.message || "Failed to generate streaming response from Gemini");
     }
 };

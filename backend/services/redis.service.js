@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 
-const createRedisClient = () => {
+export const createRedisClient = (customOptions = {}) => {
   const redisUrl = process.env.REDIS_URL;
   const redisPassword = process.env.REDIS_PASSWORD;
 
@@ -14,6 +14,7 @@ const createRedisClient = () => {
       }
       return Math.min(times * 300, 2000);
     },
+    ...customOptions,
   };
 
   if (redisPassword) {
@@ -47,4 +48,4 @@ redisClient.on("error", (err) => {
   console.warn(`[Redis Warning] ${err.message}`);
 });
 
-export default redisClient;
+export default redisClient;

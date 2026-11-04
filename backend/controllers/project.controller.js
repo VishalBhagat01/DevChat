@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import projectModel from '../models/project.model.js';
 import projectService from '../services/project.service.js';
+import messageModel from '../models/message.model.js';
 import { validationResult } from 'express-validator';
 
 // ─── Priority 2.4: File Tree Storage Protection ──────────────────────────────
@@ -161,5 +162,50 @@ export const updateFileTree = async (req, res) => {
     } catch (error) {
         console.error('Error updating project file tree:', error);
         return res.status(400).json({ error: error.message });
+    }
+};
+
+// ─── Priority 3.4: Chat Message Persistence & Pagination ─────────────────────
+export const getProjectMessages = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ error: 'Invalid project ID format' });
+        }
+
+        const userId = req.user.id || req.user._id;
+
+        // Verify authorization: requester must be a member of the project
+        const project = await projectModel.findOne({ _id: projectId, users: userId }).select('_id').lean();
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found or unauthorized' });
+        }
+
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+        const skip = (page - 1) * limit;
+
+        const totalMessages = await messageModel.countDocuments({ projectId });
+
+        // Retrieve the latest messages for the project, returned in chronological order
+        const messages = await messageModel.find({ projectId })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        // Reverse to return chronological order (oldest -> newest) for chat rendering
+        messages.reverse();
+
+        return res.status(200).json({
+            messages,
+            page,
+            totalPages: Math.ceil(totalMessages / limit),
+            totalMessages
+        });
+    } catch (error) {
+        console.error('Error fetching project messages:', error);
+        return res.status(500).json({ error: error.message || 'Internal server error' });
     }
 };

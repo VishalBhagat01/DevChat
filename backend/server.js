@@ -1,21 +1,61 @@
 import 'dotenv/config';
 import http from 'http';
-import app from './app.js'
+import app from './app.js';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import projectModel from './models/project.model.js';
-import { generateResult } from './services/ai.service.js';
+import messageModel from './models/message.model.js';
+import { generateResultStream } from './services/ai.service.js';
 import { corsOptions } from './config/cors.js';
-import redisClient from './services/redis.service.js';
+import redisClient, { createRedisClient } from './services/redis.service.js';
 import { checkSocketAiRateLimit } from './middleware/rateLimiter.middleware.js';
+import { createAdapter } from '@socket.io/redis-adapter';
 
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
-const io = new Server(server , {
-  cors: corsOptions
+
+// ─── Priority 3.5: Cloud Load Balancer WebSocket Disconnect Prevention ─────────
+// Configured ping timeout and intervals to avoid aggressive TCP termination by ALB / Render / Cloudflare
+const io = new Server(server, {
+  cors: corsOptions,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket', 'polling']
 });
+
+// ─── Priority 3.1: Socket.IO Redis Adapter for Multi-Instance Horizontal Scaling 
+const initRedisAdapter = async () => {
+  let pubClient = null;
+  let subClient = null;
+  try {
+    pubClient = createRedisClient({ enableOfflineQueue: true, maxRetriesPerRequest: 1 });
+    subClient = pubClient.duplicate();
+
+    pubClient.on('error', (err) => console.warn('[Redis Pub Error]', err.message));
+    subClient.on('error', (err) => console.warn('[Redis Sub Error]', err.message));
+
+    // Verify connectivity before attaching adapter to avoid unhandled reconnection drops
+    await Promise.race([
+      pubClient.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Redis connection timeout')), 3000))
+    ]);
+
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('[Socket.IO] Redis adapter connected and enabled for multi-instance scaling');
+  } catch (adapterErr) {
+    if (pubClient) {
+      try { pubClient.disconnect(); } catch (_) {}
+    }
+    if (subClient) {
+      try { subClient.disconnect(); } catch (_) {}
+    }
+    console.warn(`[Socket.IO] Redis adapter unavailable (${adapterErr.message}). Running with in-memory adapter.`);
+  }
+};
+
+initRedisAdapter();
 
 io.use(async (socket, next) => {
     try {
@@ -74,61 +114,152 @@ io.on('connection', socket => {
     }
 
     socket.roomId = socket.project._id.toString();
-
-
-    console.log('a user connected');
-
-
-
     socket.join(socket.roomId);
 
     socket.on('project-message', async data => {
+        try {
+            if (!data || !data.message) return;
 
-        const message = data.message;
+            const rawMessage = typeof data.message === 'string' ? data.message : JSON.stringify(data.message);
+            const aiIsPresentInMessage = rawMessage.includes('@ai');
 
-        const aiIsPresentInMessage = message.includes('@ai');
-        socket.broadcast.to(socket.roomId).emit('project-message', data)
+            const sender = {
+                _id: (socket.user && (socket.user.id || socket.user._id)) || (data.sender && data.sender._id) || 'unknown',
+                email: (socket.user && socket.user.email) || (data.sender && data.sender.email) || 'User'
+            };
 
-        if (aiIsPresentInMessage) {
+            const userMessagePayload = {
+                message: rawMessage,
+                sender,
+                isAi: false,
+                timestamp: new Date().toISOString()
+            };
 
-            // Rate-limit @ai commands: 10 per minute per user
-            const rateCheck = checkSocketAiRateLimit(socket);
-            if (!rateCheck.allowed) {
-                socket.emit('project-message', {
-                    message: JSON.stringify({
-                        text: ` Rate limit exceeded. You can send another @ai message in ${Math.ceil(rateCheck.retryAfterMs / 1000)} seconds.`
-                    }),
-                    sender: {
-                        _id: 'ai',
-                        email: 'AI'
-                    }
-                });
-                return;
-            }
+            // Broadcast user message to other collaborators in the room
+            socket.broadcast.to(socket.roomId).emit('project-message', userMessagePayload);
 
-            const prompt = message.replace('@ai', '');
+            // Priority 3.4: Asynchronously persist user message to MongoDB
+            messageModel.create({
+                projectId: socket.project._id,
+                sender,
+                message: rawMessage,
+                isAi: false,
+                timestamp: new Date()
+            }).catch(err => console.error('[Message Persistence Error (User)]:', err.message));
 
-            const result = await generateResult(prompt);
-
-
-            io.to(socket.roomId).emit('project-message', {
-                message: result,
-                sender: {
-                    _id: 'ai',
-                    email: 'AI'
+            if (aiIsPresentInMessage) {
+                // Rate-limit @ai commands: 10 per minute per user
+                const rateCheck = checkSocketAiRateLimit(socket);
+                if (!rateCheck.allowed) {
+                    const rateLimitMsg = {
+                        message: JSON.stringify({
+                            text: `⚠️ Rate limit exceeded. You can send another @ai message in ${Math.ceil(rateCheck.retryAfterMs / 1000)} seconds.`
+                        }),
+                        sender: {
+                            _id: 'ai',
+                            email: 'AI'
+                        },
+                        isAi: true,
+                        timestamp: new Date().toISOString()
+                    };
+                    socket.emit('project-message', rateLimitMsg);
+                    return;
                 }
-            })
 
+                const prompt = rawMessage.replace('@ai', '').trim();
 
-            return
+                // Priority 3.3: Emit ai-status "generating" to entire room
+                io.to(socket.roomId).emit('ai-status', {
+                    status: 'generating',
+                    prompt,
+                    sender
+                });
+
+                // Priority 3.2: Robust try/catch prevents unhandled AI rejection from crashing Node.js process
+                try {
+                    let chunkIndex = 0;
+                    const result = await generateResultStream(prompt, (chunkText) => {
+                        chunkIndex++;
+                        io.to(socket.roomId).emit('ai-chunk', {
+                            chunk: chunkText,
+                            index: chunkIndex
+                        });
+                    });
+
+                    const aiPayload = {
+                        message: result,
+                        sender: {
+                            _id: 'ai',
+                            email: 'AI'
+                        },
+                        isAi: true,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    io.to(socket.roomId).emit('ai-status', { status: 'done' });
+                    io.to(socket.roomId).emit('project-message', aiPayload);
+                    io.to(socket.roomId).emit('ai-status', { status: 'idle' });
+
+                    // Priority 3.4: Asynchronously persist AI generation to MongoDB
+                    messageModel.create({
+                        projectId: socket.project._id,
+                        sender: {
+                            _id: 'ai',
+                            email: 'AI'
+                        },
+                        message: result,
+                        isAi: true,
+                        timestamp: new Date()
+                    }).catch(err => console.error('[Message Persistence Error (AI)]:', err.message));
+
+                } catch (aiErr) {
+                    console.error('[AI Socket Error]:', aiErr.message || aiErr);
+
+                    // Notify room of error and clear thinking state without crashing server
+                    io.to(socket.roomId).emit('ai-status', {
+                        status: 'error',
+                        error: aiErr.message || 'AI generation failed'
+                    });
+
+                    io.to(socket.roomId).emit('ai-error', {
+                        message: aiErr.message || 'AI generation failed'
+                    });
+
+                    const fallbackMessage = {
+                        message: JSON.stringify({
+                            text: `⚠️ AI is temporarily unavailable: ${aiErr.message || 'Failed to generate response'}. Please try again.`
+                        }),
+                        sender: {
+                            _id: 'ai',
+                            email: 'AI'
+                        },
+                        isAi: true,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    io.to(socket.roomId).emit('project-message', fallbackMessage);
+                    io.to(socket.roomId).emit('ai-status', { status: 'idle' });
+
+                    // Persist error message for chat history continuity
+                    messageModel.create({
+                        projectId: socket.project._id,
+                        sender: {
+                            _id: 'ai',
+                            email: 'AI'
+                        },
+                        message: fallbackMessage.message,
+                        isAi: true,
+                        timestamp: new Date()
+                    }).catch(() => {});
+                }
+            }
+        } catch (eventErr) {
+            console.error('[Socket project-message Error]:', eventErr.message || eventErr);
         }
-
-
-    })
+    });
 
     socket.on('disconnect', () => {
-        console.log('user disconnected');
-        socket.leave(socket.roomId)
+        socket.leave(socket.roomId);
     });
 });
 

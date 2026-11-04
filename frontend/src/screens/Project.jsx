@@ -152,6 +152,25 @@ const Project = () => {
       }
     });
 
+    // Listen for AI generation status updates (Priority 3.3)
+    const cleanupStatusListener = receiveMessage('ai-status', (statusData) => {
+      if (statusData?.status === 'generating' || statusData?.status === 'streaming') {
+        setIsAiThinking(true);
+      } else if (
+        statusData?.status === 'idle' ||
+        statusData?.status === 'error' ||
+        statusData?.status === 'done'
+      ) {
+        setIsAiThinking(false);
+      }
+    });
+
+    // Listen for AI errors without crashing (Priority 3.2)
+    const cleanupErrorListener = receiveMessage('ai-error', (errData) => {
+      setIsAiThinking(false);
+      showToast(errData?.message || 'DevChat Copilot encountered an error', 'error');
+    });
+
     // Fetch Project
     axios
       .get(`/projects/get-project/${projectId}`)
@@ -171,6 +190,18 @@ const Project = () => {
         console.error('Error fetching project:', err);
       });
 
+    // Fetch Chat History (Priority 3.4: Message Persistence)
+    axios
+      .get(`/projects/${projectId}/messages`)
+      .then((res) => {
+        if (res.data?.messages && Array.isArray(res.data.messages)) {
+          setMessages(res.data.messages);
+        }
+      })
+      .catch((err) => {
+        console.warn('Error fetching project messages:', err);
+      });
+
     // Fetch Users for Invites
     axios
       .get('/users/all')
@@ -183,6 +214,8 @@ const Project = () => {
 
     return () => {
       if (cleanupMessageListener) cleanupMessageListener();
+      if (cleanupStatusListener) cleanupStatusListener();
+      if (cleanupErrorListener) cleanupErrorListener();
       disconnectSocket();
     };
   }, [projectId, navigate]);
