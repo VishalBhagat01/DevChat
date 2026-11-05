@@ -32,7 +32,7 @@ export const createProject = async (req, res) => {
         res.status(201).json(newProject);
     } catch (error) {
         console.error('Error creating project:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(400).json({ error: error.message, message: error.message });
     }
 };
 
@@ -72,8 +72,8 @@ export const addUserToProject = async (req, res) => {
         // Priority 2.1: Use req.user.id directly from JWT payload
         const loggedInUserId = req.user.id || req.user._id;
 
-        // Priority 2.6: Use .lean() and select only _id for verification
-        const project = await projectModel.findOne({ _id: projectId, users: loggedInUserId }).select('_id').lean();
+        // Priority 4.2: Verify requester is project owner or existing collaborator
+        const project = await projectModel.findOne({ _id: projectId, users: loggedInUserId }).select('_id owner users').lean();
 
         if (!project) {
             return res.status(404).json({ error: 'Project not found or unauthorized' });
@@ -90,6 +90,12 @@ export const addUserToProject = async (req, res) => {
 };
 
 export const getProjectById = async (req, res) => {
+    // Priority 4.4: Validation error check for projectId parameter
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
         const { projectId } = req.params;
 
@@ -101,7 +107,9 @@ export const getProjectById = async (req, res) => {
         const userId = req.user.id || req.user._id;
 
         // Priority 2.6: Use .lean() for read-only project fetch
-        const project = await projectModel.findOne({ _id: projectId, users: userId }).lean();
+        const project = await projectModel.findOne({ _id: projectId, users: userId })
+            .populate('owner', 'email')
+            .lean();
 
         if (!project) {
             return res.status(404).json({ error: 'Project not found' });
@@ -115,6 +123,12 @@ export const getProjectById = async (req, res) => {
 };
 
 export const updateFileTree = async (req, res) => {
+    // Priority 4.4: Validation error check for request body
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
         const { projectId, fileTree } = req.body;
 
@@ -165,8 +179,13 @@ export const updateFileTree = async (req, res) => {
     }
 };
 
-// ─── Priority 3.4: Chat Message Persistence & Pagination ─────────────────────
+// ─── Priority 3.4 & 4.4: Chat Message Persistence, Pagination & ID Validation ──
 export const getProjectMessages = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
         const { projectId } = req.params;
 

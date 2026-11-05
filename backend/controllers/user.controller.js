@@ -4,6 +4,17 @@ import { createService } from "../services/user.service.js";
 import * as userService from "../services/user.service.js";
 import redisClient from "../services/redis.service.js";
 
+// Helper for consistent cookie options (Priority 4.5)
+const getCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    };
+};
+
 export const createUserController = async (req, res) => {
     const errors = validationResult(req);
 
@@ -19,13 +30,16 @@ export const createUserController = async (req, res) => {
         const token = await user.generateJWT();
         delete user._doc.password;
 
+        // Priority 4.5: Set HTTP-only secure cookie for authentication
+        res.cookie('token', token, getCookieOptions());
+
         console.log(`[Register Success] User registered: ${user.email}`);
         res.status(201).json({ user, token, message: 'User registered successfully' });
     } catch (error) {
         console.error('[Register Error]', error.message || error);
         res.status(400).json({ error: error.message, message: error.message });
     }
-}
+};
 
 export const loginUserController = async (req, res) => {
     const errors = validationResult(req);
@@ -56,6 +70,9 @@ export const loginUserController = async (req, res) => {
         const token = await user.generateJWT();
         delete user._doc.password;
 
+        // Priority 4.5: Set HTTP-only secure cookie for authentication
+        res.cookie('token', token, getCookieOptions());
+
         console.log(`[Login Success] User logged in: ${email}`);
         res.status(200).json({ user, token, message: 'Login successful' });
 
@@ -63,7 +80,7 @@ export const loginUserController = async (req, res) => {
         console.error('[Login Controller Error]', err.message || err);
         res.status(400).json({ error: err.message, message: err.message });
     }
-}
+};
 
 export const profileUserController = async (req, res) => {
     try {
@@ -74,11 +91,11 @@ export const profileUserController = async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
-}
+};
 
 export const logoutUserController = async (req, res) => {
     try {
-        const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+        const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
 
         if (token) {
             try {
@@ -88,12 +105,18 @@ export const logoutUserController = async (req, res) => {
             }
         }
 
-        res.clearCookie("token");
+        // Priority 4.5: Explicitly clear HTTP-only cookie with matching flags
+        const isProduction = process.env.NODE_ENV === 'production';
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax'
+        });
         res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
-}
+};
 
 export const getAllUsersController = async (req, res) => {
     try {
@@ -116,4 +139,4 @@ export const getAllUsersController = async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }   
-}
+};
