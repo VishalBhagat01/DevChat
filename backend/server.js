@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import http from 'http';
 import app from './app.js';
+import connectDB from './db/db.js';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
@@ -13,6 +14,23 @@ import { checkSocketAiRateLimit } from './middleware/rateLimiter.middleware.js';
 import { createAdapter } from '@socket.io/redis-adapter';
 
 const PORT = process.env.PORT || 3000;
+
+const requiredProductionEnv = ['MONGO_URI', 'JWT_SECRET', 'GOOGLE_AI_KEY', 'CLIENT_URL'];
+
+const validateEnvironment = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const missing = requiredProductionEnv.filter((key) => !process.env[key]?.trim());
+  if (missing.length > 0) {
+    throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+  }
+
+  if (process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long in production');
+  }
+};
 
 const server = http.createServer(app);
 
@@ -263,6 +281,29 @@ io.on('connection', socket => {
     });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const startServer = async () => {
+  validateEnvironment();
+  await connectDB();
+
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+};
+
+const shutdown = async (signal) => {
+  console.log(`[Shutdown] Received ${signal}. Closing server gracefully...`);
+  server.close(async () => {
+    await mongoose.disconnect();
+    redisClient.disconnect();
+    console.log('[Shutdown] Server stopped');
+    process.exit(0);
+  });
+};
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
+
+startServer().catch((error) => {
+  console.error('[Startup Error] Backend stopped during startup:', error.message);
+  process.exit(1);
 });

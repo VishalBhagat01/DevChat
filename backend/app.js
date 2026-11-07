@@ -3,7 +3,6 @@ import express from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import compression from 'compression';
-import connectDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import cookieParser from 'cookie-parser';
@@ -11,10 +10,12 @@ import cors from 'cors';
 import aiRoutes from './routes/ai.routes.js';
 import { corsOptions } from './config/cors.js';
 import { generalRateLimiter } from './middleware/rateLimiter.middleware.js';
-
-connectDB();
+import mongoose from 'mongoose';
 
 const app = express();
+
+app.disable('x-powered-by');
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
 // ─── Security Headers (helmet) ───────────────────────────────────────────────
 app.use(helmet({
@@ -62,6 +63,22 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.get('/ready', (req, res) => {
+  const isDatabaseReady = mongoose.connection.readyState === 1;
+
+  if (!isDatabaseReady) {
+    return res.status(503).json({
+      status: 'not_ready',
+      database: 'disconnected'
+    });
+  }
+
+  return res.status(200).json({
+    status: 'ready',
+    database: 'connected'
+  });
 });
 
 // Global error handler
