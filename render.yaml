@@ -17,27 +17,3 @@ services:
         generateValue: true
       - key: GOOGLE_AI_KEY
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: devchat-redis
-          property: connectionString
-
-  - type: web
-    name: devchat-web
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
-  - type: redis
-    name: devchat-redis
-    plan: free
-    maxmemoryPolicy: noeviction

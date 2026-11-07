@@ -103,7 +103,7 @@ DevChat/
 │   │   └── screens/     Landing, auth, dashboard, and project screens
 │   ├── public/
 │   └── .env.example     Frontend environment template
-├── render.yaml           Render Blueprint for API, frontend, and Redis
+├── render.yaml           Render backend Web Service configuration
 ├── vercel.json           Vercel frontend configuration
 └── DEPLOYMENT.md         Detailed Render and MongoDB deployment guide
 ```
@@ -286,18 +286,15 @@ The frontend build is the production deployment artifact in `frontend/dist`.
 
 ## Deployment
 
-The recommended deployment uses Render:
+The recommended deployment uses Render for the backend and Vercel for the frontend:
 
 1. Create a MongoDB Atlas cluster and database user.
 2. Push the repository to GitHub.
-3. Create a Render Blueprint from the repository.
-4. Render reads [`render.yaml`](./render.yaml) and creates:
-   - `devchat-api`
-   - `devchat-web`
-   - `devchat-redis`
-5. Set the API `MONGO_URI`, `GOOGLE_AI_KEY`, and `CLIENT_URL`.
-6. Set the frontend `VITE_API_URL` to the public API URL.
-7. Redeploy after changing frontend environment variables.
+3. Create a free Render **Web Service** with `backend` as the root directory.
+4. Set the backend `MONGO_URI`, `GOOGLE_AI_KEY`, `JWT_SECRET`, and `CLIENT_URL`.
+5. Create a Vercel project with `frontend` as the root directory.
+6. Set `VITE_API_URL` to the public Render API URL.
+7. Redeploy the backend after setting `CLIENT_URL`.
 8. Verify `/health` and `/ready`.
 
 See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the complete deployment checklist and MongoDB Atlas configuration.
