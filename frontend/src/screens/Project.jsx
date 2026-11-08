@@ -432,9 +432,15 @@ const Project = () => {
   };
 
   const handleExportZip = async () => {
+    const files = Object.entries(fileTree);
+    if (files.length === 0) {
+      showToast('There are no project files to download', 'info');
+      return;
+    }
+
     try {
       const zip = new JSZip();
-      Object.entries(fileTree).forEach(([name, data]) => {
+      files.forEach(([name, data]) => {
         zip.file(name, data?.file?.contents || '');
       });
 
@@ -729,6 +735,17 @@ const Project = () => {
             <i className="ri-window-line text-sm"></i>
             <span className="hidden sm:inline">Preview Window</span>
             {iframeUrl && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+          </button>
+
+          {/* Download the complete project source */}
+          <button
+            type="button"
+            onClick={handleExportZip}
+            title="Download project as ZIP"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-medium text-neutral-400 hover:bg-white/[0.08] hover:text-white transition-all"
+          >
+            <i className="ri-download-cloud-2-line text-sm"></i>
+            <span className="hidden sm:inline">Download ZIP</span>
           </button>
 
           {/* Toggle Bottom Terminal Drawer */}

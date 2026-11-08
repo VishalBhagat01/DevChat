@@ -20,7 +20,8 @@ body,
   background-color: #09090b;
   color: #f4f4f5;
   font-family: var(--font-sans);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Typography Helpers */
