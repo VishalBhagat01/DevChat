@@ -35,5 +35,5 @@ userSchema.methods.generateJWT = function() {
     return JWT.sign({ id: this._id, email: this.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
 };
 
-const User = mongoose.model("user", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;
