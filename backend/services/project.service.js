@@ -40,6 +40,7 @@ export const getAllProjectsByUserId = async (userid) => {
 
     // Priority 2.6 & 4.3: Use .lean() and sort by most recently modified
     const allProjects = await projectModel.find({ users: userid })
+        .select('_id name owner users createdAt updatedAt')
         .sort({ updatedAt: -1 })
         .lean();
 

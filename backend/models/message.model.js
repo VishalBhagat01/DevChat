@@ -36,6 +36,7 @@ const messageSchema = new mongoose.Schema({
 
 // Compound index for chronological querying by project (accelerates chat history pagination)
 messageSchema.index({ projectId: 1, createdAt: -1 });
+messageSchema.index({ projectId: 1, createdAt: -1, _id: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 

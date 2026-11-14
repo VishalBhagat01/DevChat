@@ -20,9 +20,6 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for email search & lookups
-userSchema.index({ email: 1 });
-
 userSchema.statics.hashPassword = async function(password) {
     return await bcrypt.hash(password, 10);
 };

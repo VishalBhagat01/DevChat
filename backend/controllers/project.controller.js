@@ -203,25 +203,67 @@ export const getProjectMessages = async (req, res) => {
 
         const page = Math.max(1, parseInt(req.query.page, 10) || 1);
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
-        const skip = (page - 1) * limit;
+        const cursor = req.query.cursor;
+        let cursorValue = null;
+
+        if (cursor) {
+            try {
+                cursorValue = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+                if (!cursorValue.createdAt || !mongoose.Types.ObjectId.isValid(cursorValue.id)) {
+                    throw new Error('Invalid cursor');
+                }
+                cursorValue.createdAt = new Date(cursorValue.createdAt);
+                if (Number.isNaN(cursorValue.createdAt.getTime())) {
+                    throw new Error('Invalid cursor');
+                }
+            } catch {
+                return res.status(400).json({ error: 'Invalid message cursor' });
+            }
+        }
 
         const totalMessages = await messageModel.countDocuments({ projectId });
 
-        // Retrieve the latest messages for the project, returned in chronological order
-        const messages = await messageModel.find({ projectId })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        const messageQuery = { projectId };
+        if (cursorValue) {
+            messageQuery.$or = [
+                { createdAt: { $lt: cursorValue.createdAt } },
+                { createdAt: cursorValue.createdAt, _id: { $lt: cursorValue.id } }
+            ];
+        }
+
+        // Retrieve the latest messages for the project, returned in chronological order.
+        // Cursor requests use createdAt and _id together to avoid duplicates at equal timestamps.
+        const messageRequest = messageModel.find(messageQuery)
+            .sort(cursorValue ? { createdAt: -1, _id: -1 } : { createdAt: -1 });
+        if (cursorValue) {
+            messageRequest.limit(limit + 1);
+        } else {
+            messageRequest.skip((page - 1) * limit).limit(limit);
+        }
+        const messages = await messageRequest.lean();
+
+        const hasMore = Boolean(cursorValue && messages.length > limit);
+        if (hasMore) {
+            messages.pop();
+        }
 
         // Reverse to return chronological order (oldest -> newest) for chat rendering
         messages.reverse();
+
+        const nextCursor = hasMore && messages.length > 0
+            ? Buffer.from(JSON.stringify({
+                createdAt: messages[0].createdAt,
+                id: messages[0]._id
+            })).toString('base64url')
+            : null;
 
         return res.status(200).json({
             messages,
             page,
             totalPages: Math.ceil(totalMessages / limit),
-            totalMessages
+            totalMessages,
+            nextCursor,
+            hasMore
         });
     } catch (error) {
         console.error('Error fetching project messages:', error);

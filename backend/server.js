@@ -104,7 +104,7 @@ io.use(async (socket, next) => {
             return next(new Error('Invalid projectId'));
         }
 
-        const project = await projectModel.findById(projectId);
+        const project = await projectModel.findById(projectId).select('_id users').lean();
         if (!project) {
             return next(new Error('Project not found'));
         }
@@ -133,6 +133,19 @@ io.on('connection', socket => {
 
     socket.roomId = socket.project._id.toString();
     socket.join(socket.roomId);
+
+    if (process.env.NODE_ENV === 'development' || process.env.BENCHMARK_MODE === 'true') {
+        socket.on('benchmark:ping', (payload, acknowledge) => {
+            if (typeof acknowledge !== 'function') {
+                return;
+            }
+
+            acknowledge({
+                sequence: payload?.sequence ?? null,
+                serverReceivedAt: Date.now()
+            });
+        });
+    }
 
     socket.on('project-message', async data => {
         try {

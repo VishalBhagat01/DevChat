@@ -34,6 +34,7 @@ projectSchema.index({ name: 1, owner: 1 }, { unique: true });
 
 // Priority 2.2: Multikey index on `users` to accelerate collaborator and dashboard queries (avoid COLLSCAN)
 projectSchema.index({ users: 1 });
+projectSchema.index({ users: 1, updatedAt: -1 });
 
 const Project = mongoose.model('Project', projectSchema);
 export default Project;

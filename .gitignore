@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+benchmarks/.env
+benchmarks/tools/
 
 # Dependencies
 node_modules/
@@ -32,6 +34,7 @@ BACKEND_PRODUCTION_OPTIMIZATIONS.md
 explaination.md
 explanation.md
 
+benchmarks/
 
 .agents
 skills-lock.json
