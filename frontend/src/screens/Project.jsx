@@ -53,7 +53,7 @@ const Project = () => {
   // WebContainer & Live Execution State
   const [webContainer, setWebContainer] = useState(null);
   const [iframeUrl, setIframeUrl] = useState(null);
-  const [runProcess, setRunProcess] = useState(null);
+  const runProcessRef = useRef(null);
   const [runStatus, setRunStatus] = useState('idle'); // 'idle' | 'installing' | 'running' | 'ready' | 'error'
   const [runOutput, setRunOutput] = useState([]);
 
@@ -472,7 +472,11 @@ const Project = () => {
   ========================================================= */
 
   const appendRunOutput = (chunk) => {
-    setRunOutput((prev) => [...prev, String(chunk)].slice(-400));
+    const text = typeof chunk === 'string'
+      ? chunk
+      : new TextDecoder().decode(chunk);
+    if (!text) return;
+    setRunOutput((prev) => [...prev, text].slice(-400));
   };
 
   const runProject = async () => {
@@ -491,6 +495,11 @@ const Project = () => {
       return;
     }
 
+    if (runProcessRef.current) {
+      runProcessRef.current.kill();
+      runProcessRef.current = null;
+    }
+
     setRunStatus('installing');
     setRunOutput([]);
     setIframeUrl(null);
@@ -498,11 +507,6 @@ const Project = () => {
     try {
       appendRunOutput('Mounting file tree to WebContainer runtime...\n');
       await webContainer.mount(fileTree);
-
-      if (runProcess) {
-        runProcess.kill();
-        setRunProcess(null);
-      }
 
       // Parse package.json
       const packageContents = fileTree['package.json']?.file?.contents;
@@ -545,10 +549,21 @@ const Project = () => {
       appendRunOutput(`$ ${command[0]} ${command[1].join(' ')}\n`);
 
       const nextProcess = await webContainer.spawn(command[0], command[1]);
+      runProcessRef.current = nextProcess;
       nextProcess.output.pipeTo(
         new WritableStream({ write: appendRunOutput })
       );
-      setRunProcess(nextProcess);
+
+      const exitCode = await nextProcess.exit;
+      if (runProcessRef.current !== nextProcess) return;
+
+      runProcessRef.current = null;
+      if (exitCode !== 0) {
+        throw new Error(`Command exited with code ${exitCode}`);
+      }
+
+      setRunStatus('idle');
+      appendRunOutput('\nCommand finished.\n');
     } catch (error) {
       console.error('Execution error:', error);
       setRunStatus('error');
@@ -559,9 +574,9 @@ const Project = () => {
   };
 
   const stopProject = () => {
-    if (runProcess) {
-      runProcess.kill();
-      setRunProcess(null);
+    if (runProcessRef.current) {
+      runProcessRef.current.kill();
+      runProcessRef.current = null;
       setRunStatus('idle');
       appendRunOutput('\nServer terminated by user.\n');
       showToast('Server stopped', 'info');
