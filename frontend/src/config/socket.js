@@ -47,9 +47,9 @@ export const receiveMessage = (eventName, callback) => {
     };
 };
 
-export const sendMessage = (eventName, data) => {
+export const sendMessage = (eventName, data, acknowledge) => {
     if (!socketInstance) return;
-    socketInstance.emit(eventName, data);
+    socketInstance.emit(eventName, data, acknowledge);
 };
 
 export const disconnectSocket = () => {

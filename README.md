@@ -13,6 +13,7 @@ DevChat is a collaborative AI coding workspace. Users can create projects, invit
 - Gemini-powered AI code generation
 - Streaming AI responses in collaborative rooms
 - Monaco code editor and file explorer
+- Conflict-free shared editing with Yjs CRDT documents over Socket.IO
 - Browser-based project execution with WebContainers
 - Redis-backed rate limiting, token blacklisting, and Socket.IO scaling
 - Production security headers, compression, CORS, validation, and readiness checks
@@ -75,7 +76,7 @@ The backend is an ES module Node.js application. [`backend/server.js`](./backend
 ### Data and services
 
 - **MongoDB/Mongoose** stores users, projects, file trees, and messages.
-- **Redis** stores rate-limit counters and logout token blacklists. It also enables the Socket.IO Redis adapter when available.
+- **Redis** stores rate-limit counters, logout token blacklists, and encoded shared-document snapshots. It also enables the Socket.IO Redis adapter when available.
 - **Google Gemini** generates structured application code and streams AI responses.
 - **Socket.IO** manages authenticated project rooms and collaborative messaging.
 
@@ -253,6 +254,8 @@ The frontend opens a Socket.IO connection for a selected project and sends the J
 Main events include:
 
 - `project-message` - User and AI chat messages
+- `document:join` - Load the shared CRDT state for a file
+- `document:update` - Broadcast a merged CRDT document snapshot
 - `ai-status` - AI generation state
 - `ai-chunk` - Streaming AI response chunks
 

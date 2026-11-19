@@ -9,9 +9,15 @@ import projectModel from './models/project.model.js';
 import messageModel from './models/message.model.js';
 import { generateResultStream } from './services/ai.service.js';
 import { corsOptions } from './config/cors.js';
-import redisClient, { createRedisClient } from './services/redis.service.js';
+import redisClient, {
+  createRedisClient,
+  getDocumentState,
+  setDocumentState,
+  setDocumentStateIfAbsent
+} from './services/redis.service.js';
 import { checkSocketAiRateLimit } from './middleware/rateLimiter.middleware.js';
 import { createAdapter } from '@socket.io/redis-adapter';
+import * as Y from 'yjs';
 
 const PORT = process.env.PORT || 3000;
 
@@ -42,6 +48,42 @@ const io = new Server(server, {
   pingInterval: 25000,
   transports: ['websocket', 'polling']
 });
+
+const MAX_DOCUMENT_STATE_BYTES = 2 * 1024 * 1024;
+
+const isValidDocumentName = (fileName) =>
+    typeof fileName === 'string' &&
+    fileName.length > 0 &&
+    fileName.length <= 512 &&
+    !fileName.includes('..') &&
+    !fileName.includes('\\');
+
+const createDocumentState = (content) => {
+    const doc = new Y.Doc();
+    doc.getText('content').insert(0, typeof content === 'string' ? content : '');
+    return Buffer.from(Y.encodeStateAsUpdate(doc)).toString('base64');
+};
+
+const mergeDocumentState = async (projectId, fileName, incomingState) => {
+    const doc = new Y.Doc();
+    const currentState = await getDocumentState(projectId, fileName);
+    if (currentState) {
+        Y.applyUpdate(doc, Buffer.from(currentState, 'base64'));
+    }
+    Y.applyUpdate(doc, Buffer.from(incomingState, 'base64'));
+    return Buffer.from(Y.encodeStateAsUpdate(doc)).toString('base64');
+};
+
+const getOrCreateDocumentState = async (projectId, fileName, initialContent) => {
+    const storedState = await getDocumentState(projectId, fileName);
+    if (storedState) {
+        return storedState;
+    }
+
+    const initialState = createDocumentState(initialContent);
+    const created = await setDocumentStateIfAbsent(projectId, fileName, initialState);
+    return created ? initialState : getDocumentState(projectId, fileName);
+};
 
 // ─── Priority 3.1: Socket.IO Redis Adapter for Multi-Instance Horizontal Scaling 
 const initRedisAdapter = async () => {
@@ -133,6 +175,50 @@ io.on('connection', socket => {
 
     socket.roomId = socket.project._id.toString();
     socket.join(socket.roomId);
+
+    socket.on('document:join', async (data, acknowledge) => {
+        try {
+            const fileName = data?.fileName;
+            if (!isValidDocumentName(fileName)) {
+                return acknowledge?.({ error: 'Invalid document name' });
+            }
+
+            const state = await getOrCreateDocumentState(
+                socket.roomId,
+                fileName,
+                data?.initialContent
+            );
+
+            acknowledge?.({ fileName, state });
+        } catch (error) {
+            console.error('[Document Join Error]:', error.message);
+            acknowledge?.({ error: 'Unable to load shared document' });
+        }
+    });
+
+    socket.on('document:update', async (data) => {
+        try {
+            const fileName = data?.fileName;
+            const state = data?.state;
+            if (!isValidDocumentName(fileName) || typeof state !== 'string') {
+                return;
+            }
+
+            const stateBuffer = Buffer.from(state, 'base64');
+            if (stateBuffer.length === 0 || stateBuffer.length > MAX_DOCUMENT_STATE_BYTES) {
+                return;
+            }
+
+            const mergedState = await mergeDocumentState(socket.roomId, fileName, state);
+            await setDocumentState(socket.roomId, fileName, mergedState);
+            socket.broadcast.to(socket.roomId).emit('document:update', {
+                fileName,
+                state: mergedState
+            });
+        } catch (error) {
+            console.error('[Document Update Error]:', error.message);
+        }
+    });
 
     if (process.env.NODE_ENV === 'development' || process.env.BENCHMARK_MODE === 'true') {
         socket.on('benchmark:ping', (payload, acknowledge) => {

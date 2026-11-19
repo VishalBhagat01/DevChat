@@ -256,7 +256,7 @@ const CodeEditor = ({
           language={language}
           value={fileContent}
           theme="obsidian-dark"
-          onChange={(value) => onChangeContent(value || '')}
+          onChange={(value, event) => onChangeContent(value || '', event?.changes || [])}
           onMount={handleEditorDidMount}
           loading={
             <div className="flex h-full items-center justify-center bg-[#09090d] text-xs text-neutral-500">

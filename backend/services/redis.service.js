@@ -39,6 +39,50 @@ export const createRedisClient = (customOptions = {}) => {
 };
 
 const redisClient = createRedisClient();
+const documentStateFallback = new Map();
+
+const getDocumentKey = (projectId, fileName) =>
+  `crdt:${projectId}:${encodeURIComponent(fileName)}`;
+
+export const getDocumentState = async (projectId, fileName) => {
+  const key = getDocumentKey(projectId, fileName);
+  try {
+    const state = await redisClient.get(key);
+    return state || documentStateFallback.get(key) || null;
+  } catch (error) {
+    console.warn(`[Redis Document Read Warning] ${error.message}`);
+    return documentStateFallback.get(key) || null;
+  }
+};
+
+export const setDocumentState = async (projectId, fileName, state) => {
+  const key = getDocumentKey(projectId, fileName);
+  documentStateFallback.set(key, state);
+  try {
+    return await redisClient.set(key, state);
+  } catch (error) {
+    console.warn(`[Redis Document Write Warning] ${error.message}`);
+    return 'OK';
+  }
+};
+
+export const setDocumentStateIfAbsent = async (projectId, fileName, state) => {
+  const key = getDocumentKey(projectId, fileName);
+  try {
+    const result = await redisClient.set(key, state, 'NX');
+    if (result === 'OK') {
+      documentStateFallback.set(key, state);
+    }
+    return result === 'OK';
+  } catch (error) {
+    if (documentStateFallback.has(key)) {
+      return false;
+    }
+    documentStateFallback.set(key, state);
+    console.warn(`[Redis Document Init Warning] ${error.message}`);
+    return true;
+  }
+};
 
 redisClient.on("connect", () => {
   console.log("Connected to Redis");

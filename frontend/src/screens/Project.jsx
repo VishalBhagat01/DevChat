@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import * as Y from 'yjs';
 import { UserContext } from '../context/user.context';
 import axios from '../config/axios';
 import {
@@ -8,7 +9,7 @@ import {
   sendMessage,
   receiveMessage,
 } from '../config/socket';
-import { getWebContainer } from '../config/webcontainer';
+import { getWebContainer, toWebContainerTree } from '../config/webcontainer';
 import JSZip from 'jszip';
 
 // Modular Workspace Components
@@ -29,6 +30,7 @@ import ToastContainer from '../components/common/ToastContainer';
 
 // Utilities
 import { sounds } from '../utils/soundEffects';
+import { decodeDocumentState, encodeDocumentState } from '../utils/crdt';
 
 const Project = () => {
   const location = useLocation();
@@ -44,6 +46,9 @@ const Project = () => {
   const [openFiles, setOpenFiles] = useState([]);
   const [dirtyFiles, setDirtyFiles] = useState(new Set());
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const fileTreeRef = useRef({});
+  const crdtDocsRef = useRef(new Map());
+  const suppressCrdtBroadcastRef = useRef(new Set());
 
   // Chat & AI State
   const [messages, setMessages] = useState([]);
@@ -86,6 +91,49 @@ const Project = () => {
   const dismissToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  useEffect(() => {
+    fileTreeRef.current = fileTree;
+  }, [fileTree]);
+
+  const ensureCrdtDocument = useCallback((filename) => {
+    const existingDoc = crdtDocsRef.current.get(filename);
+    if (existingDoc) return existingDoc;
+
+    const doc = new Y.Doc();
+    const text = doc.getText('content');
+    doc.on('update', () => {
+      const content = text.toString();
+      setFileTree((prevTree) => {
+        if (prevTree[filename]?.file?.contents === content) return prevTree;
+        return {
+          ...prevTree,
+          [filename]: { file: { contents: content } },
+        };
+      });
+      setDirtyFiles((prev) => new Set([...prev, filename]));
+
+      if (!suppressCrdtBroadcastRef.current.has(filename)) {
+        sendMessage('document:update', {
+          fileName: filename,
+          state: encodeDocumentState(Y.encodeStateAsUpdate(doc)),
+        });
+      }
+    });
+
+    crdtDocsRef.current.set(filename, doc);
+    return doc;
+  }, []);
+
+  const applyCrdtState = useCallback((filename, encodedState) => {
+    const doc = ensureCrdtDocument(filename);
+    suppressCrdtBroadcastRef.current.add(filename);
+    try {
+      Y.applyUpdate(doc, decodeDocumentState(encodedState));
+    } finally {
+      suppressCrdtBroadcastRef.current.delete(filename);
+    }
+  }, [ensureCrdtDocument]);
 
   /* =========================================================
      SOCKET & INITIAL DATA FETCH
@@ -171,6 +219,11 @@ const Project = () => {
       showToast(errData?.message || 'DevChat Copilot encountered an error', 'error');
     });
 
+    const cleanupDocumentStateListener = receiveMessage('document:update', (data) => {
+      if (!data?.fileName || typeof data.state !== 'string') return;
+      applyCrdtState(data.fileName, data.state);
+    });
+
     // Fetch Project
     axios
       .get(`/projects/get-project/${projectId}`)
@@ -216,9 +269,32 @@ const Project = () => {
       if (cleanupMessageListener) cleanupMessageListener();
       if (cleanupStatusListener) cleanupStatusListener();
       if (cleanupErrorListener) cleanupErrorListener();
+      if (cleanupDocumentStateListener) cleanupDocumentStateListener();
+      crdtDocsRef.current.forEach((doc) => doc.destroy());
+      crdtDocsRef.current.clear();
       disconnectSocket();
     };
-  }, [projectId, navigate]);
+  }, [applyCrdtState, navigate, projectId, showToast]);
+
+  useEffect(() => {
+    if (!currentFile || !projectId) return;
+
+    ensureCrdtDocument(currentFile);
+    const initialContent = fileTreeRef.current[currentFile]?.file?.contents || '';
+    sendMessage(
+      'document:join',
+      { fileName: currentFile, initialContent },
+      (response) => {
+        if (response?.error) {
+          showToast(response.error, 'error');
+          return;
+        }
+        if (response?.state) {
+          applyCrdtState(currentFile, response.state);
+        }
+      }
+    );
+  }, [applyCrdtState, currentFile, ensureCrdtDocument, projectId, showToast]);
 
   // WebContainer Server Ready listener
   useEffect(() => {
@@ -361,18 +437,31 @@ const Project = () => {
     sounds.playClick();
   };
 
-  const handleContentChange = (newContent) => {
+  const handleContentChange = (newContent, changes = []) => {
     if (!currentFile) return;
 
-    const updatedTree = {
-      ...fileTree,
-      [currentFile]: {
-        file: { contents: newContent },
-      },
-    };
+    const doc = ensureCrdtDocument(currentFile);
+    const text = doc.getText('content');
+    if (text.toString() === newContent) return;
 
-    setFileTree(updatedTree);
-    setDirtyFiles((prev) => new Set([...prev, currentFile]));
+    doc.transact(() => {
+      if (changes.length === 0) {
+        text.delete(0, text.length);
+        text.insert(0, newContent);
+        return;
+      }
+
+      [...changes]
+        .sort((left, right) => right.rangeOffset - left.rangeOffset)
+        .forEach(({ rangeOffset, rangeLength, text: insertedText }) => {
+          if (rangeLength > 0) {
+            text.delete(rangeOffset, rangeLength);
+          }
+          if (insertedText) {
+            text.insert(rangeOffset, insertedText);
+          }
+        });
+    }, 'monaco-local-edit');
   };
 
   const handleSaveCurrentFile = () => {
@@ -506,7 +595,7 @@ const Project = () => {
 
     try {
       appendRunOutput('Mounting file tree to WebContainer runtime...\n');
-      await webContainer.mount(fileTree);
+      await webContainer.mount(toWebContainerTree(fileTree));
 
       // Parse package.json
       const packageContents = fileTree['package.json']?.file?.contents;
