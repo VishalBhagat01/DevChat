@@ -20,6 +20,9 @@ DevChat is a collaborative AI coding workspace. Users can create projects, invit
 
 ## Architecture
 
+For the detailed system design, request flows, data model, security controls,
+and deployment topology, see [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md).
+
 ```text
 Browser
   |
